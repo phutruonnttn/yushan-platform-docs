@@ -405,5 +405,5 @@ This project is part of the Yushan Platform ecosystem.
 
 **Yushan Platform Documentation** - Complete guide to the gamified web novel reading platform 🚀
 
-**Last Updated**: January 2025
+**Last Updated**: November 2025
 
