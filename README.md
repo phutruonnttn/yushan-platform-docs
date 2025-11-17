@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=0dc7Z0p1V4E">
-    <img src="https://img.youtube.com/vi/0dc7Z0p1V4E/hqdefault.jpg" alt="Yushan Demo" width="720">
+    <img src="assets/thumbnail.png" alt="Yushan Demo" width="720">
   </a>
   <br>
   <em>🎥 Yushan Platform – Demo Video</em>
