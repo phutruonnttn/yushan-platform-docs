@@ -15,7 +15,7 @@
 
 <video width="720" controls>
   <source src="assets/cicd-fe.mp4" type="video/mp4">
-  Your browser does not support the video tag.
+  Your browser does not support the video tag. <a href="assets/cicd-fe.mp4">Download video</a>
 </video>
 <br>
 <em>Frontend CI/CD Pipeline</em>
@@ -23,7 +23,7 @@
 
 <video width="720" controls>
   <source src="assets/cicd-backend-monolithic.mp4" type="video/mp4">
-  Your browser does not support the video tag.
+  Your browser does not support the video tag. <a href="assets/cicd-backend-monolithic.mp4">Download video</a>
 </video>
 <br>
 <em>Backend Monolithic CI/CD Pipeline</em>
@@ -31,7 +31,7 @@
 
 <video width="720" controls>
   <source src="assets/cicd-microservice-content.mp4" type="video/mp4">
-  Your browser does not support the video tag.
+  Your browser does not support the video tag. <a href="assets/cicd-microservice-content.mp4">Download video</a>
 </video>
 <br>
 <em>Microservice Content Service CI/CD Pipeline</em>
