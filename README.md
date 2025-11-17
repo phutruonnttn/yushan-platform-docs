@@ -1,5 +1,7 @@
 # Yushan Platform Documentation
 
+http://youtube.com/watch?v=0dc7Z0p1V4E
+
 > 📚 **Complete documentation and architecture guide for Yushan Platform** - A gamified web novel reading platform with monolithic (Phase 1) and microservices (Phase 2) architectures, with Phase 3 planned for Kubernetes and AWS deployment.
 
 ## 📋 Overview
