@@ -36,25 +36,31 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 ### Phase 2: Microservices Architecture ✅ **Complete**
 
-**Status**: ✅ Production Ready | **Deployment**: Digital Ocean (Backend)
+**Status**: ✅ Production Ready | **Deployment**: Digital Ocean (Backend) | **Frontend**: GitHub Pages (Cloned from Phase 1)
 
-**Description**: Refactored into microservices architecture for better scalability and maintainability.
+**Description**: Refactored into microservices architecture for better scalability and maintainability. **All backend services are deployed on Digital Ocean using Terraform**. The frontend applications are cloned from Phase 1 monolithic frontend repositories into separate Phase 2 repositories, with only the backend API endpoints updated to connect to the new microservices API Gateway.
 
-**Infrastructure Services**:
+**Deployment Strategy**:
+- **Backend**: All microservices deployed on **Digital Ocean** using Terraform (Infrastructure as Code)
+- **Frontend**: **Cloned from Phase 1** - Frontend applications are cloned from monolithic frontend repos into separate Phase 2 repos, with only backend API endpoint configuration changed
+- **Frontend Deployment**: Continue to be deployed on **GitHub Pages** (same as Phase 1)
+- **API Endpoints**: Only backend API endpoints are updated in frontend configuration to connect to the new microservices API Gateway
+
+**Infrastructure Services** (Deployed on Digital Ocean):
 - [yushan-microservices-service-registry](https://github.com/phutruonnttn/yushan-microservices-service-registry) - Eureka Service Discovery
 - [yushan-microservices-config-server](https://github.com/phutruonnttn/yushan-microservices-config-server) - Spring Cloud Config Server
 - [yushan-microservices-api-gateway](https://github.com/phutruonnttn/yushan-microservices-api-gateway) - Spring Cloud Gateway
 
-**Business Services**:
+**Business Services** (Deployed on Digital Ocean):
 - [yushan-microservices-user-service](https://github.com/phutruonnttn/yushan-microservices-user-service) - User management & authentication
 - [yushan-microservices-content-service](https://github.com/phutruonnttn/yushan-microservices-content-service) - Novel & chapter management
 - [yushan-microservices-engagement-service](https://github.com/phutruonnttn/yushan-microservices-engagement-service) - Comments, reviews, votes
 - [yushan-microservices-gamification-service](https://github.com/phutruonnttn/yushan-microservices-gamification-service) - XP, achievements, Yuan
 - [yushan-microservices-analytics-service](https://github.com/phutruonnttn/yushan-microservices-analytics-service) - Analytics & rankings
 
-**Frontend Applications**:
-- [yushan-microservices-frontend](https://github.com/phutruonnttn/yushan-microservices-frontend) - Reader-facing React app
-- [yushan-microservices-admin-dashboard](https://github.com/phutruonnttn/yushan-microservices-admin-dashboard) - Admin dashboard
+**Frontend Applications** (Cloned from Phase 1, Deployed on GitHub Pages):
+- [yushan-microservices-frontend](https://github.com/phutruonnttn/yushan-microservices-frontend) - Reader-facing React app (cloned from `yushan-monolithic-frontend`, only API endpoint updated)
+- [yushan-microservices-admin-dashboard](https://github.com/phutruonnttn/yushan-microservices-admin-dashboard) - Admin dashboard (cloned from `yushan-monolithic-admin-dashboard`, only API endpoint updated)
 
 **Key Features**:
 - Service discovery with Eureka
@@ -71,7 +77,9 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 - Cache: Redis 7
 - Search: Elasticsearch 8.11
 - Message Queue: Apache Kafka
-- Deployment: Digital Ocean (Terraform), Docker
+- Deployment: 
+  - **Backend**: Digital Ocean (Terraform), Docker
+  - **Frontend**: GitHub Pages (cloned from Phase 1 monolithic frontend repos, only API endpoint configuration changed)
 
 **Deployment & Infrastructure**:
 - [Digital Ocean Deployment with Terraform](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform) - Infrastructure as Code
@@ -148,16 +156,16 @@ yushan-platform-docs/
 - **Admin Dashboard**: [yushan-monolithic-admin-dashboard](https://github.com/phutruonnttn/yushan-monolithic-admin-dashboard)
 
 ### Phase 2 (Microservices)
-- **Service Registry**: [yushan-microservices-service-registry](https://github.com/phutruonnttn/yushan-microservices-service-registry)
-- **Config Server**: [yushan-microservices-config-server](https://github.com/phutruonnttn/yushan-microservices-config-server)
-- **API Gateway**: [yushan-microservices-api-gateway](https://github.com/phutruonnttn/yushan-microservices-api-gateway)
-- **User Service**: [yushan-microservices-user-service](https://github.com/phutruonnttn/yushan-microservices-user-service)
-- **Content Service**: [yushan-microservices-content-service](https://github.com/phutruonnttn/yushan-microservices-content-service)
-- **Engagement Service**: [yushan-microservices-engagement-service](https://github.com/phutruonnttn/yushan-microservices-engagement-service)
-- **Gamification Service**: [yushan-microservices-gamification-service](https://github.com/phutruonnttn/yushan-microservices-gamification-service)
-- **Analytics Service**: [yushan-microservices-analytics-service](https://github.com/phutruonnttn/yushan-microservices-analytics-service)
-- **Frontend**: [yushan-microservices-frontend](https://github.com/phutruonnttn/yushan-microservices-frontend)
-- **Admin Dashboard**: [yushan-microservices-admin-dashboard](https://github.com/phutruonnttn/yushan-microservices-admin-dashboard)
+- **Service Registry**: [yushan-microservices-service-registry](https://github.com/phutruonnttn/yushan-microservices-service-registry) (Deployed on Digital Ocean)
+- **Config Server**: [yushan-microservices-config-server](https://github.com/phutruonnttn/yushan-microservices-config-server) (Deployed on Digital Ocean)
+- **API Gateway**: [yushan-microservices-api-gateway](https://github.com/phutruonnttn/yushan-microservices-api-gateway) (Deployed on Digital Ocean)
+- **User Service**: [yushan-microservices-user-service](https://github.com/phutruonnttn/yushan-microservices-user-service) (Deployed on Digital Ocean)
+- **Content Service**: [yushan-microservices-content-service](https://github.com/phutruonnttn/yushan-microservices-content-service) (Deployed on Digital Ocean)
+- **Engagement Service**: [yushan-microservices-engagement-service](https://github.com/phutruonnttn/yushan-microservices-engagement-service) (Deployed on Digital Ocean)
+- **Gamification Service**: [yushan-microservices-gamification-service](https://github.com/phutruonnttn/yushan-microservices-gamification-service) (Deployed on Digital Ocean)
+- **Analytics Service**: [yushan-microservices-analytics-service](https://github.com/phutruonnttn/yushan-microservices-analytics-service) (Deployed on Digital Ocean)
+- **Frontend**: [yushan-microservices-frontend](https://github.com/phutruonnttn/yushan-microservices-frontend) (Cloned from Phase 1 monolithic frontend, deployed on GitHub Pages)
+- **Admin Dashboard**: [yushan-microservices-admin-dashboard](https://github.com/phutruonnttn/yushan-microservices-admin-dashboard) (Cloned from Phase 1 monolithic admin dashboard, deployed on GitHub Pages)
 
 ### Infrastructure & Deployment
 - **Terraform Deployment**: [Digital_Ocean_Deployment_with_Terraform](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform)
@@ -261,7 +269,9 @@ yushan-platform-docs/
 
 ### Phase 2 Documentation
 - **Architecture**: [Phase 2 Microservices Architecture](./docs/PHASE2_MICROSERVICES_ARCHITECTURE.md)
-- **Deployment**: [Digital Ocean Deployment Guide](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform)
+- **Deployment**: 
+  - **Backend**: [Digital Ocean Deployment Guide](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform) - All backend services deployed on Digital Ocean
+  - **Frontend**: GitHub Pages (frontend repos cloned from Phase 1 monolithic frontend, only backend API endpoint updated)
 - **Design Documents**: [Yushan Design Documents](https://github.com/phutruonnttn/Yushan_Web_Novel_Deisgn_Documents)
 - **Status**: ✅ Production Ready
 
@@ -306,15 +316,18 @@ yushan-platform-docs/
 
 | Phase | Status | Completion | Deployment | Notes |
 |-------|--------|------------|------------|-------|
-| **Phase 1** | ✅ Complete | 100% | Railway (BE) | Monolithic architecture, fully functional |
-| **Phase 2** | ✅ Complete | 95% | Digital Ocean | Microservices, production-ready |
+| **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
+| **Phase 2** | ✅ Complete | 95% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
 | **Phase 3** | 🔄 Planned | 0% | AWS (Planned) | Kubernetes, distributed tracing, Saga pattern |
 
 ## 🔧 Technology Evolution
 
 ### Phase 1 → Phase 2
 - **Architecture**: Monolithic → Microservices
-- **Deployment**: Railway → Digital Ocean (Terraform)
+- **Backend Deployment**: Railway → Digital Ocean (Terraform)
+- **Frontend Deployment**: GitHub Pages (unchanged)
+- **Frontend Repositories**: Cloned from Phase 1 monolithic frontend repos into separate Phase 2 repos
+- **Frontend Changes**: Only backend API endpoint configuration updated
 - **Communication**: Direct calls → Service discovery + API Gateway
 - **Data**: Single database → Database per service
 - **Events**: Synchronous → Asynchronous (Kafka)
@@ -386,16 +399,16 @@ This project is part of the Yushan Platform ecosystem.
 - [Admin Dashboard](https://github.com/phutruonnttn/yushan-monolithic-admin-dashboard)
 
 ### Phase 2 (Microservices)
-- [Service Registry](https://github.com/phutruonnttn/yushan-microservices-service-registry)
-- [Config Server](https://github.com/phutruonnttn/yushan-microservices-config-server)
-- [API Gateway](https://github.com/phutruonnttn/yushan-microservices-api-gateway)
-- [User Service](https://github.com/phutruonnttn/yushan-microservices-user-service)
-- [Content Service](https://github.com/phutruonnttn/yushan-microservices-content-service)
-- [Engagement Service](https://github.com/phutruonnttn/yushan-microservices-engagement-service)
-- [Gamification Service](https://github.com/phutruonnttn/yushan-microservices-gamification-service)
-- [Analytics Service](https://github.com/phutruonnttn/yushan-microservices-analytics-service)
-- [Frontend](https://github.com/phutruonnttn/yushan-microservices-frontend)
-- [Admin Dashboard](https://github.com/phutruonnttn/yushan-microservices-admin-dashboard)
+- [Service Registry](https://github.com/phutruonnttn/yushan-microservices-service-registry) (Deployed on Digital Ocean)
+- [Config Server](https://github.com/phutruonnttn/yushan-microservices-config-server) (Deployed on Digital Ocean)
+- [API Gateway](https://github.com/phutruonnttn/yushan-microservices-api-gateway) (Deployed on Digital Ocean)
+- [User Service](https://github.com/phutruonnttn/yushan-microservices-user-service) (Deployed on Digital Ocean)
+- [Content Service](https://github.com/phutruonnttn/yushan-microservices-content-service) (Deployed on Digital Ocean)
+- [Engagement Service](https://github.com/phutruonnttn/yushan-microservices-engagement-service) (Deployed on Digital Ocean)
+- [Gamification Service](https://github.com/phutruonnttn/yushan-microservices-gamification-service) (Deployed on Digital Ocean)
+- [Analytics Service](https://github.com/phutruonnttn/yushan-microservices-analytics-service) (Deployed on Digital Ocean)
+- [Frontend](https://github.com/phutruonnttn/yushan-microservices-frontend) (Cloned from Phase 1 monolithic frontend, deployed on GitHub Pages)
+- [Admin Dashboard](https://github.com/phutruonnttn/yushan-microservices-admin-dashboard) (Cloned from Phase 1 monolithic admin dashboard, deployed on GitHub Pages)
 
 ### Infrastructure & Documentation
 - [Terraform Deployment](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform)
