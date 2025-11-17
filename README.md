@@ -2,14 +2,41 @@
 
 > 📚 **Complete documentation and architecture guide for Yushan Platform** - A gamified web novel reading platform with monolithic (Phase 1) and microservices (Phase 2) architectures, with Phase 3 planned for Kubernetes and AWS deployment.
 
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=0dc7Z0p1V4E">
-    <img src="assets/thumbnail.png" alt="Yushan Demo" width="720">
-  </a>
-  <br>
-  <em>🎥 Yushan Platform – Demo Video</em>
-</p>
+## 🎬 Demo Videos
 
+<div align="center">
+
+<a href="https://www.youtube.com/watch?v=0dc7Z0p1V4E">
+  <img src="assets/thumbnail.png" alt="Yushan Demo" width="720">
+</a>
+<br>
+<em>Platform Features Demo</em>
+<br><br>
+
+<video width="720" controls>
+  <source src="assets/cicd-fe.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<br>
+<em>Frontend CI/CD Pipeline</em>
+<br><br>
+
+<video width="720" controls>
+  <source src="assets/cicd-backend-monolithic.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<br>
+<em>Backend Monolithic CI/CD Pipeline</em>
+<br><br>
+
+<video width="720" controls>
+  <source src="assets/cicd-microservice-content.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<br>
+<em>Microservice Content Service CI/CD Pipeline</em>
+
+</div>
 
 ## 📋 Overview
 
