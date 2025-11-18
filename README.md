@@ -254,7 +254,7 @@ yushan-platform-docs/
 │   │   ├── ASS_Presentation_Team18.pptx
 │   │   └── SWE5001_Team18_ProjectProgressReport.pdf
 │   └── phase3-kubernetes/
-│       └── (Planning phase)
+│       └── README.md (Comprehensive Phase 3 planning & architecture)
 └── assets/
     └── thumbnail.png
 ```
@@ -421,8 +421,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 - **Reports**: Available in `docs/phase2-microservices/`
 
 ### Phase 3 Documentation
-- **Planning**: [Phase 3 Planning](./docs/phase3-kubernetes/planning.md) (Coming Soon)
-- **Roadmap**: [Phase 3 Roadmap](./docs/phase3-kubernetes/roadmap.md) (Coming Soon)
+- **Architecture & Planning**: [Phase 3 Kubernetes README](./docs/phase3-kubernetes/README.md) - Comprehensive planning document with architecture improvements
 - **Status**: 🔄 Planning Phase
 
 ## 🚀 Getting Started
