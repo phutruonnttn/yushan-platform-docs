@@ -41,6 +41,7 @@ Phase 3 represents a significant evolution from Phase 2, focusing on:
 - ✅ Gateway-level JWT authentication (centralized validation)
 - ✅ Token validation at API Gateway (reduce microservice load)
 - ✅ Consistent security policy across all services
+- ✅ Inactive user token validation (fix security issue where inactive users can still use tokens)
 
 ## 🏗️ Architecture Improvements
 
@@ -885,6 +886,116 @@ spring:
 
 ---
 
+### 11. Inactive User Token Validation (Security Issue)
+
+**Problem**: Currently, when a user becomes inactive/suspended/banned after a token is created, the token can still be used in some services because those services check status from the JWT token (old status) instead of from the database.
+
+**Current Issue**:
+- **User Service**: ✅ Checks status from database → Token is rejected when user is inactive
+- **Other Services**: ❌ Check status from JWT token → Token still passes when user is inactive
+
+**Security Risk**: User is suspended but can still use old token to call APIs (except User Service).
+
+**Discussed Solutions** (decision pending):
+
+#### Option A: Redis Cache - Full User Status
+- **Approach**: Cache all user statuses in Redis
+- **Key**: `user:status:{userId}`, Value: `status_code`
+- **Update**: User Service updates Redis when status changes (direct or via Kafka)
+- **Gateway**: Checks Redis cache when validating JWT
+- **Pros**: 
+  - Real-time updates
+  - Fast lookup (< 1ms)
+  - No dependency on User Service
+- **Cons**: 
+  - High memory usage (10M users = ~500MB)
+  - Requires Redis infrastructure
+  - Cache miss → Reject token
+
+#### Option B: Redis Block List (Only Inactive Users)
+- **Approach**: Only store list of blocked/inactive users in Redis Set
+- **Key**: `user:blocklist`, Value: Set of `userId`
+- **Update**: User Service adds/removes from block list when status changes
+- **Gateway**: Checks block list when validating JWT
+- **Logic**: Not in block list = active (assume active)
+- **Pros**: 
+  - Memory efficient (only inactive users, ~1-5MB for 100K blocked users)
+  - Fast lookup O(1)
+  - Scalable (block list size does not increase with total users)
+- **Cons**: 
+  - Eventual consistency window (if event not yet synced)
+  - False negatives if event is lost
+  - Need fallback for old tokens
+
+#### Option C: Database Table in Gateway
+- **Approach**: Gateway has its own database table to store user status
+- **Table**: `user_status_cache` with columns: `user_id`, `status`, `last_updated`
+- **Sync**: Async from User Service via Kafka events
+- **Gateway**: Queries database table when validating JWT
+- **Pros**: 
+  - Persistent storage (data not lost on restart)
+  - Query flexibility (SQL, indexes)
+  - No need for separate Redis
+- **Cons**: 
+  - Higher latency than Redis (~1-5ms vs < 1ms)
+  - Additional database dependency for Gateway
+  - Database connection overhead
+
+#### Option D: Direct Sync from User Service
+- **Approach**: User Service directly calls Gateway API to update blocklist
+- **Flow**: User Service → HTTP call → Gateway internal API → Update blocklist
+- **Gateway**: Exposes internal API `/internal/blocklist/users/{userId}`
+- **Pros**: 
+  - Real-time sync (no lag)
+  - Guaranteed delivery
+  - Simple architecture
+- **Cons**: 
+  - Tight coupling (User Service depends on Gateway)
+  - Synchronous dependency (increases latency)
+  - Single point of failure
+  - Multiple Gateway instances → Need to update all
+
+#### Option E: Hybrid - Direct Redis Update + Kafka Event + Local Cache (Recommended)
+- **Approach**: Combines multiple tiers
+- **Tier 1**: Local in-memory cache (Caffeine) in Gateway - 100K users
+- **Tier 2**: Redis Set blocklist (shared) - only inactive users
+- **Tier 3**: User Service fallback (rare, for old tokens)
+- **Sync**: User Service updates Redis directly + publishes Kafka event
+- **Gateway**: Local cache → Redis → User Service (fallback)
+- **Pros**: 
+  - Ultra-fast (local cache < 0.1ms, 99% hit rate)
+  - Real-time (direct Redis update)
+  - Memory efficient (block list only inactive users)
+  - Resilient (multiple tiers)
+  - No tight coupling
+- **Cons**: 
+  - More complex (3 tiers)
+  - Requires Redis infrastructure
+
+#### Option F: Hybrid - Database Table + Local Cache
+- **Approach**: Database table in Gateway + local cache
+- **Tier 1**: Local in-memory cache (Caffeine)
+- **Tier 2**: Database table (persistent)
+- **Sync**: Kafka events from User Service
+- **Pros**: 
+  - Persistent (data not lost)
+  - Fast with local cache
+  - No Redis needed
+- **Cons**: 
+  - Database latency (~1-5ms)
+  - Additional database for Gateway
+
+**Considerations to decide**:
+- [ ] Memory vs Latency trade-off
+- [ ] Infrastructure preference (Redis vs Database)
+- [ ] Coupling preference (direct sync vs event-driven)
+- [ ] Scalability requirements (10M vs 100M users)
+- [ ] Consistency requirements (real-time vs eventual)
+
+**Note**: Detailed implementation and comparison available in `SECURITY_ISSUE_INACTIVE_USER_TOKEN.md`
+
+---
+
 ## 📦 Technology Stack
 
 ### Orchestration & Service Discovery
@@ -1195,6 +1306,13 @@ git checkout phase3-kubernetes
 - [ ] Configure public endpoints whitelist
 - [ ] Add fallback authentication for service-to-service calls
 - [ ] Implement gateway high availability
+- [ ] **Fix inactive user token validation issue** (choose one of options A-F)
+  - [ ] Option A: Redis Cache - Full User Status
+  - [ ] Option B: Redis Block List (only inactive users)
+  - [ ] Option C: Database Table in Gateway
+  - [ ] Option D: Direct Sync from User Service
+  - [ ] Option E: Hybrid - Direct Redis Update + Kafka Event + Local Cache
+  - [ ] Option F: Hybrid - Database Table + Local Cache
 
 ### Kubernetes & Cloud
 - [ ] Create Kubernetes manifests for all services
