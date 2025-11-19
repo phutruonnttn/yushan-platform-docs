@@ -37,6 +37,11 @@ Phase 3 represents a significant evolution from Phase 2, focusing on:
 - ✅ Distributed tracing
 - ✅ Enhanced monitoring and observability
 
+### Security Improvements
+- ✅ Gateway-level JWT authentication (centralized validation)
+- ✅ Token validation at API Gateway (reduce microservice load)
+- ✅ Consistent security policy across all services
+
 ## 🏗️ Architecture Improvements
 
 ### 1. Rich Domain Model (Fixing Anemic Domain Model)
@@ -725,6 +730,161 @@ public class SagaInstance {
 
 ---
 
+### 10. Gateway-Level JWT Authentication
+
+**Problem**: Currently, each microservice validates JWT tokens independently, causing:
+- Redundant validation across services
+- Higher latency (validation at each service)
+- Inconsistent security policies
+- Higher CPU usage
+
+**Solution**: Centralize JWT validation at API Gateway level.
+
+**Implementation**:
+```java
+// ✅ Phase 3: Gateway-Level JWT Validation
+
+@Component
+public class JwtAuthenticationGatewayFilter implements GatewayFilter, Ordered {
+    
+    @Autowired
+    private JwtUtil jwtUtil;
+    
+    private static final List<String> PUBLIC_PATHS = List.of(
+        "/api/v1/auth/login",
+        "/api/v1/auth/register",
+        "/api/v1/auth/refresh",
+        "/api/v1/novels",  // Public browsing
+        "/api/v1/categories",
+        "/actuator/health"
+    );
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String path = request.getURI().getPath();
+        
+        // Skip validation for public endpoints
+        if (PUBLIC_PATHS.stream().anyMatch(path::startsWith)) {
+            return chain.filter(exchange);
+        }
+        
+        // Extract token from Authorization header
+        String authHeader = request.getHeaders().getFirst("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return unauthorized(exchange, "Missing or invalid Authorization header");
+        }
+        
+        String token = authHeader.substring(7);
+        
+        // Validate token at gateway
+        if (!jwtUtil.validateToken(token)) {
+            return unauthorized(exchange, "Invalid or expired token");
+        }
+        
+        // Extract user info from token
+        String userId = jwtUtil.extractUserId(token);
+        String email = jwtUtil.extractEmail(token);
+        List<String> roles = jwtUtil.extractRoles(token);
+        
+        // Add user info to request headers for downstream services
+        ServerHttpRequest modifiedRequest = request.mutate()
+            .header("X-User-Id", userId)
+            .header("X-User-Email", email)
+            .header("X-User-Roles", String.join(",", roles))
+            .header("X-Gateway-Validated", "true")  // Mark as gateway-validated
+            .build();
+        
+        return chain.filter(exchange.mutate().request(modifiedRequest).build());
+    }
+    
+    private Mono<Void> unauthorized(ServerWebExchange exchange, String message) {
+        ServerHttpResponse response = exchange.getResponse();
+        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.getHeaders().add("Content-Type", "application/json");
+        
+        String body = String.format("{\"error\": \"Unauthorized\", \"message\": \"%s\"}", message);
+        DataBuffer buffer = response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8));
+        return response.writeWith(Mono.just(buffer));
+    }
+    
+    @Override
+    public int getOrder() {
+        return -100; // High priority, run early
+    }
+}
+```
+
+**Microservice Simplification**:
+```java
+// ✅ Phase 3: Simplified Microservice Authentication
+
+// Microservices can trust gateway-validated requests
+@Component
+public class GatewayAuthenticationFilter extends OncePerRequestFilter {
+    
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, 
+                                   HttpServletResponse response, 
+                                   FilterChain filterChain) throws ServletException, IOException {
+        
+        // Check if request is gateway-validated
+        String gatewayValidated = request.getHeader("X-Gateway-Validated");
+        if ("true".equals(gatewayValidated)) {
+            // Extract user info from headers (set by gateway)
+            String userId = request.getHeader("X-User-Id");
+            String email = request.getHeader("X-User-Email");
+            String roles = request.getHeader("X-User-Roles");
+            
+            // Set authentication context
+            Authentication authentication = new PreAuthenticatedAuthenticationToken(
+                userId, null, parseRoles(roles)
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        } else {
+            // Fallback: validate token directly (for direct service-to-service calls)
+            // This should be rare in Phase 3
+            validateTokenDirectly(request);
+        }
+        
+        filterChain.doFilter(request, response);
+    }
+}
+```
+
+**Configuration**:
+```yaml
+# API Gateway application.yml
+spring:
+  cloud:
+    gateway:
+      default-filters:
+        - name: JwtAuthentication
+          args:
+            jwtSecret: ${JWT_SECRET}
+            publicPaths: /api/v1/auth/**,/api/v1/novels,/api/v1/categories
+```
+
+**Benefits**:
+- ✅ **Single Validation Point**: Validate token once at gateway
+- ✅ **Reduced Load**: Microservices don't need to validate tokens
+- ✅ **Better Performance**: Lower latency (one validation vs. multiple)
+- ✅ **Consistent Security**: Centralized security policy
+- ✅ **Early Rejection**: Invalid tokens rejected before routing
+- ✅ **Simplified Services**: Microservices can trust gateway-validated requests
+
+**Trade-offs**:
+- ⚠️ Gateway becomes critical security component (single point of failure)
+- ⚠️ Need to ensure gateway is highly available
+- ⚠️ Service-to-service calls may need alternative authentication
+
+**Mitigation**:
+- Use service mesh (Istio/Linkerd) for service-to-service authentication
+- Implement gateway high availability (multiple instances)
+- Keep fallback validation in services for direct calls
+
+---
+
 ## 📦 Technology Stack
 
 ### Orchestration & Service Discovery
@@ -942,6 +1102,7 @@ git push origin v3.0.0
 | **Transactions** | Local only | SAGA Pattern |
 | **Resilience** | Partial | Comprehensive |
 | **Tracing** | None | Distributed Tracing |
+| **Authentication** | Per-service JWT validation | Gateway-level JWT validation |
 | **Orchestration** | Docker Compose | Kubernetes |
 | **Cloud** | Digital Ocean | AWS |
 
@@ -1026,6 +1187,14 @@ git checkout phase3-kubernetes
 - [ ] Set up distributed tracing (Jaeger/Zipkin)
 - [ ] Configure Prometheus metrics
 - [ ] Set up Grafana dashboards
+
+### Security Improvements
+- [ ] Implement Gateway-Level JWT Authentication
+- [ ] Add JWT validation filter to API Gateway
+- [ ] Simplify microservice authentication (trust gateway-validated requests)
+- [ ] Configure public endpoints whitelist
+- [ ] Add fallback authentication for service-to-service calls
+- [ ] Implement gateway high availability
 
 ### Kubernetes & Cloud
 - [ ] Create Kubernetes manifests for all services
