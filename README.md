@@ -56,6 +56,14 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 **Description**: Refactored into microservices architecture for better scalability and maintainability. **All backend services are deployed on Digital Ocean using Terraform**. The frontend applications are cloned from Phase 1 monolithic frontend repositories into separate Phase 2 repositories, with only the backend API endpoints updated to connect to the new microservices API Gateway.
 
+**Additional Improvements** (preparation for Phase 3):
+- ✅ **Rich Domain Model refactoring** completed for user-service, content-service, and engagement-service
+  - Converted Anemic Domain Models to Rich Domain Models
+  - Added business logic methods to entities (changeStatus, publish, archive, updateContent, etc.)
+  - Updated services to use business methods instead of direct setters
+  - All tests passing (user-service: 309 unit + 32 integration, engagement-service: 664 unit + 2 integration, content-service: 571 unit + 53 integration)
+  - This improvement is part of Phase 3 roadmap but implemented in Phase 2 codebase
+
 **Deployment Strategy**:
 - **Backend**: All microservices deployed on **Digital Ocean** using Terraform (Infrastructure as Code)
 - **Frontend**: **Cloned from Phase 1** - Frontend applications are cloned from monolithic frontend repos into separate Phase 2 repos, with only backend API endpoint configuration changed
@@ -205,22 +213,32 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 ---
 
-### Phase 3: Kubernetes & AWS Deployment 🔄 **Planned**
+### Phase 3: Kubernetes & AWS Deployment 🔄 **In Progress**
 
-**Status**: 🔄 Planning Phase
+**Status**: 🔄 In Progress (15% Complete) | **Progress**: Rich Domain Model refactoring completed for 3 services
 
 **Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment.
 
+**Completed Features**:
+- ✅ **Rich Domain Model refactoring** (user-service, content-service, engagement-service)
+  - Converted Anemic Domain Models to Rich Domain Models
+  - Added business logic methods to entities (changeStatus, publish, archive, updateContent, etc.)
+  - Updated services to use business methods instead of direct setters
+  - All tests passing (309 unit + 32 integration tests for user-service, 664 unit + 2 integration tests for engagement-service, 571 unit + 53 integration tests for content-service)
+
 **Planned Features**:
-- Kubernetes orchestration
-- Distributed tracing (Jaeger/Zipkin)
-- Saga pattern for distributed transactions
-- Service mesh (Istio/Linkerd)
-- Advanced monitoring and observability
-- AWS deployment (EKS, RDS, ElastiCache, etc.)
-- Fix outstanding issues from Phase 2
-- Performance optimizations
-- Enhanced security
+- [ ] Repository Pattern implementation
+- [ ] Aggregate boundaries and Domain Events
+- [ ] Kubernetes orchestration
+- [ ] Distributed tracing (Jaeger/Zipkin)
+- [ ] Saga pattern for distributed transactions
+- [ ] Service mesh (Istio/Linkerd)
+- [ ] Advanced monitoring and observability
+- [ ] AWS deployment (EKS, RDS, ElastiCache, etc.)
+- [ ] Event-driven cache tables for eventual consistency
+- [ ] Idempotent event consumption
+- [ ] Performance optimizations
+- [ ] Enhanced security
 
 **Target Technologies**:
 - Orchestration: Kubernetes (EKS)
@@ -422,7 +440,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 
 ### Phase 3 Documentation
 - **Architecture & Planning**: [Phase 3 Kubernetes README](./docs/phase3-kubernetes/README.md) - Comprehensive planning document with architecture improvements
-- **Status**: 🔄 Planning Phase
+- **Status**: 🔄 In Progress (15% Complete) | Rich Domain Model refactoring completed for 3 services
 
 ## 🚀 Getting Started
 
@@ -438,10 +456,10 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
    - Review: [Design Documents](https://github.com/phutruonnttn/Yushan_Web_Novel_Deisgn_Documents)
    - Setup: [Deployment Guide](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform)
 
-3. **Plan for Phase 3** (Kubernetes):
-   - Review Phase 2 issues and improvements
-   - Study Kubernetes and service mesh patterns
-   - Prepare for AWS deployment
+3. **Continue Phase 3** (Kubernetes):
+   - ✅ Rich Domain Model refactoring completed (user-service, content-service, engagement-service)
+   - Review: [Phase 3 Architecture](./docs/phase3-kubernetes/README.md)
+   - Next steps: Repository Pattern, Aggregate Boundaries, Kubernetes migration
 
 ### For Architects
 
@@ -461,8 +479,10 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 | Phase | Status | Completion | Deployment | Notes |
 |-------|--------|------------|------------|-------|
 | **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
-| **Phase 2** | ✅ Complete | 95% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
-| **Phase 3** | 🔄 Planned | 0% | AWS (Planned) | Kubernetes, distributed tracing, Saga pattern |
+| **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | 
+Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 
+monolithic repos |
+| **Phase 3** | 🔄 In Progress | 15% | AWS (Planned) | **Rich Domain Model: ✅ Completed** (user-service, content-service, engagement-service). Kubernetes, distributed tracing, Saga pattern in planning |
 
 ## 🔧 Technology Evolution
 
