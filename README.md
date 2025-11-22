@@ -215,7 +215,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 ### Phase 3: Kubernetes & AWS Deployment 🔄 **In Progress**
 
-**Status**: 🔄 In Progress (15% Complete) | **Progress**: Rich Domain Model refactoring completed for 3 services
+**Status**: 🔄 In Progress (25% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation completed
 
 **Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment.
 
@@ -225,6 +225,18 @@ This repository contains comprehensive documentation for the **Yushan Platform**
   - Added business logic methods to entities (changeStatus, publish, archive, updateContent, etc.)
   - Updated services to use business methods instead of direct setters
   - All tests passing (309 unit + 32 integration tests for user-service, 664 unit + 2 integration tests for engagement-service, 571 unit + 53 integration tests for content-service)
+- ✅ **Inter-Service Communication Optimization** (engagement-service ↔ content-service)
+  - Migrated blocking write operations from sync API calls to Kafka events
+  - `updateNovelRatingAndCount` (Review create/update/delete) → Kafka event (`novel-rating-events`)
+  - `incrementVoteCount` (Vote create) → Kafka event (`novel-vote-count-events`)
+  - Response time improved from 600-700ms to <100ms (non-blocking)
+  - **Decision**: Cache table pattern not implemented - read-only GET operations remain sync (acceptable), write operations already optimized via Kafka
+- ✅ **Hybrid Idempotency Implementation** (all event consumers)
+  - Implemented hybrid approach: Redis (fast checks) + Database table (persistent backup)
+  - Created `processed_events` table in gamification-service, content-service, and user-service
+  - Implemented `IdempotencyService` to handle dual-layer idempotency checks
+  - Ensures idempotency even when Redis is restarted (data persisted in database)
+  - All Kafka event consumers now use hybrid idempotency (UserEventListener, EngagementEventListener, InternalEventListener, UserActivityListener, EngagementEventListener in content-service)
 
 **Planned Features**:
 - [ ] Repository Pattern implementation
@@ -235,8 +247,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 - [ ] Service mesh (Istio/Linkerd)
 - [ ] Advanced monitoring and observability
 - [ ] AWS deployment (EKS, RDS, ElastiCache, etc.)
-- [ ] Event-driven cache tables for eventual consistency
-- [ ] Idempotent event consumption
+- [x] ~~Event-driven cache tables for eventual consistency~~ (Not needed - see explanation in Phase 3 docs)
 - [ ] Performance optimizations
 - [ ] Enhanced security
 
@@ -440,7 +451,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 
 ### Phase 3 Documentation
 - **Architecture & Planning**: [Phase 3 Kubernetes README](./docs/phase3-kubernetes/README.md) - Comprehensive planning document with architecture improvements
-- **Status**: 🔄 In Progress (15% Complete) | Rich Domain Model refactoring completed for 3 services
+- **Status**: 🔄 In Progress (25% Complete) | Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation completed
 
 ## 🚀 Getting Started
 
@@ -458,6 +469,8 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 
 3. **Continue Phase 3** (Kubernetes):
    - ✅ Rich Domain Model refactoring completed (user-service, content-service, engagement-service)
+   - ✅ Inter-service communication optimization completed (write operations migrated to Kafka events)
+   - ✅ Hybrid idempotency implementation completed (Redis + Database table for all event consumers)
    - Review: [Phase 3 Architecture](./docs/phase3-kubernetes/README.md)
    - Next steps: Repository Pattern, Aggregate Boundaries, Kubernetes migration
 
@@ -480,7 +493,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 |-------|--------|------------|------------|-------|
 | **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
 | **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
-| **Phase 3** | 🔄 In Progress | 15% | AWS (Planned) | **Rich Domain Model: ✅ Completed** (user-service, content-service, engagement-service). Kubernetes, distributed tracing, Saga pattern in planning |
+| **Phase 3** | 🔄 In Progress | 25% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB). **In Progress**: Kubernetes, distributed tracing, Saga pattern |
 
 ## 🔧 Technology Evolution
 
