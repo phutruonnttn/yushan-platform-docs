@@ -479,9 +479,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 | Phase | Status | Completion | Deployment | Notes |
 |-------|--------|------------|------------|-------|
 | **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
-| **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | 
-Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 
-monolithic repos |
+| **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
 | **Phase 3** | 🔄 In Progress | 15% | AWS (Planned) | **Rich Domain Model: ✅ Completed** (user-service, content-service, engagement-service). Kubernetes, distributed tracing, Saga pattern in planning |
 
 ## 🔧 Technology Evolution
