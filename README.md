@@ -217,7 +217,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 **Status**: 🔄 In Progress (35% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) completed
 
-**Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment.
+**Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment. **Phase 3 is developed in separate repositories cloned from Phase 2 original repositories** (see [Phase 3 README](./docs/phase3-kubernetes/README.md) for details).
 
 **Completed Features**:
 - ✅ **Rich Domain Model refactoring** (user-service, content-service, engagement-service)

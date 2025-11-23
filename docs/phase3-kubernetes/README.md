@@ -1191,9 +1191,9 @@ spring:
 
 ## 🗂️ Repository Structure
 
-### Phase 3 Development (Evolved from Phase 2 Repositories)
+### Phase 3 Development (Separate Repositories Cloned from Phase 2)
 
-**Decision**: Phase 3 will be developed directly in Phase 2 repositories using Git branch strategy.
+**Decision**: Phase 3 is developed in separate repositories cloned from Phase 2 original repositories. This allows independent development while maintaining the ability to reference the original Phase 2 codebase.
 
 **Phase 2 Original Repositories** (NUS-ISS team):
 - [yushan-user-service](https://github.com/maugus0/yushan-user-service)
@@ -1257,61 +1257,71 @@ yushan-microservices-user-service/
 
 ## 🚀 Migration Strategy
 
-### Git Branch Strategy
+### Repository Strategy
 
-**Approach**: Develop Phase 3 directly in Phase 2 repositories using feature branches.
+**Approach**: Phase 3 is developed in separate repositories cloned from Phase 2 original repositories. Each Phase 3 repository maintains its own git history and can be developed independently.
 
-**Branch Structure**:
+**Repository Structure**:
 ```
-main (Phase 2 - Production)
-├── phase2-stable (Phase 2 stable releases)
-└── phase3-kubernetes (Phase 3 development branch)
-    ├── feature/rich-domain-model
-    ├── feature/repository-pattern
-    ├── feature/event-cache-tables
-    ├── feature/idempotent-events
-    ├── feature/kubernetes-migration
-    ├── feature/saga-pattern
-    └── feature/distributed-tracing
+Phase 2 (Original - NUS ISS team):
+├── yushan-user-service (main branch - production)
+├── yushan-content-service (main branch - production)
+├── yushan-engagement-service (main branch - production)
+├── yushan-gamification-service (main branch - production)
+├── yushan-analytics-service (main branch - production)
+├── yushan-api-gateway (main branch - production)
+├── yushan-config-server (main branch - production)
+└── yushan-platform-service-registry (main branch - production)
+
+Phase 3 (Development - phutruonnttn):
+├── yushan-microservices-user-service (cloned from Phase 2)
+│   ├── main (Phase 3 development)
+│   └── feature/* branches
+├── yushan-microservices-content-service (cloned from Phase 2)
+├── yushan-microservices-engagement-service (cloned from Phase 2)
+├── yushan-microservices-gamification-service (cloned from Phase 2)
+├── yushan-microservices-analytics-service (cloned from Phase 2)
+├── yushan-microservices-api-gateway (cloned from Phase 2)
+├── yushan-microservices-config-server (cloned from Phase 2)
+└── yushan-microservices-service-registry (cloned from Phase 2)
 ```
 
 **Workflow**:
 ```bash
-# Start Phase 3 development
-git checkout -b phase3-kubernetes
-git push -u origin phase3-kubernetes
+# Phase 3 repositories are cloned from Phase 2
+# Each Phase 3 repository is developed independently
 
-# Create feature branches from phase3-kubernetes
+# Example: Working on user-service Phase 3
+cd yushan-microservices-user-service
+git checkout main
+
+# Create feature branch for Phase 3 improvements
 git checkout -b feature/rich-domain-model
 # ... implement feature ...
-git checkout phase3-kubernetes
-git merge feature/rich-domain-model
+git commit -m "feat: Implement Rich Domain Model"
+git push origin feature/rich-domain-model
 
-# Keep Phase 2 stable on main branch
-# Phase 2 production deployments use main branch
-# Phase 3 development happens on phase3-kubernetes branch
+# Merge to main when ready
+git checkout main
+git merge feature/rich-domain-model
+git push origin main
 ```
 
 **Benefits**:
-- ✅ Single source of truth
-- ✅ Continuous git history
-- ✅ Easy to backport bugfixes from Phase 3 to Phase 2
-- ✅ Can merge Phase 3 to main when ready
-- ✅ Phase 2 remains stable on main branch
+- ✅ Independent development - Phase 3 doesn't affect Phase 2 production
+- ✅ Clear separation between Phase 2 (stable) and Phase 3 (development)
+- ✅ Can reference Phase 2 codebase when needed
+- ✅ Phase 2 remains stable and production-ready
+- ✅ Phase 3 can experiment with breaking changes
 
-### Step 1: Setup Development Branch
+### Step 1: Clone Phase 2 Repositories
 ```bash
-# For each Phase 2 service repository
-cd yushan-microservices-user-service
-git checkout main
-git pull origin main
+# Clone Phase 2 repositories to create Phase 3 development repos
+# (Already done - repositories are at phutruonnttn/yushan-microservices-*)
 
-# Create Phase 3 development branch
-git checkout -b phase3-kubernetes
-git push -u origin phase3-kubernetes
-
-# Create feature branch for first improvement
-git checkout -b feature/rich-domain-model
+# Example structure:
+# Phase 2: maugus0/yushan-user-service
+# Phase 3: phutruonnttn/yushan-microservices-user-service (cloned)
 ```
 
 ### Step 2: Implement Domain-Driven Design (Feature Branch)
@@ -1351,13 +1361,11 @@ git checkout -b feature/rich-domain-model
 4. Set up MSK for Kafka
 5. Deploy services to EKS
 
-**Production Merge**: After all features are merged to `phase3-kubernetes` branch and tested, merge to `main` for production deployment.
+**Production Deployment**: After all Phase 3 features are implemented and tested in the Phase 3 repositories, they can be deployed to AWS EKS for production.
 
 ```bash
-# When Phase 3 is ready for production
-git checkout main
-git merge phase3-kubernetes
-git push origin main
+# Phase 3 repositories are ready for production deployment
+# Each service is deployed independently from its Phase 3 repository
 
 # Tag Phase 3 release
 git tag -a v3.0.0 -m "Phase 3: Kubernetes & AWS Deployment"
@@ -1370,7 +1378,7 @@ git push origin v3.0.0
 
 | Aspect | Phase 2 | Phase 3 |
 |--------|---------|---------|
-| **Repository Strategy** | Separate repos | Same repos, branch-based |
+| **Repository Strategy** | Original repos (maugus0) | Separate repos cloned from Phase 2 (phutruonnttn) |
 | **Service Discovery** | Eureka | Kubernetes Native |
 | **Domain Model** | Anemic | Rich Domain Model |
 | **Data Access** | Direct Mapper | Repository Pattern |
@@ -1384,62 +1392,90 @@ git push origin v3.0.0
 | **Orchestration** | Docker Compose | Kubernetes |
 | **Cloud** | Digital Ocean | AWS |
 
-## 🔄 Backporting Strategy
+## 🔄 Bugfix Strategy
 
-Since Phase 2 and Phase 3 share the same repositories, bugfixes can be easily backported:
+Since Phase 2 and Phase 3 are in separate repositories, bugfixes need to be applied independently:
 
-**Backporting Bugfixes from Phase 3 to Phase 2**:
+**Applying Bugfixes**:
+
+**Option 1: Fix in Phase 2 (if bug exists in production)**
 ```bash
-# Fix bug in Phase 3
-git checkout phase3-kubernetes
+# Fix in Phase 2 original repository
+cd yushan-user-service  # Phase 2 repo (maugus0)
+git checkout main
 git checkout -b fix/critical-bug
 # ... fix bug ...
 git commit -m "Fix: Critical bug in user service"
-git checkout phase3-kubernetes
-git merge fix/critical-bug
-
-# Backport to Phase 2
-git checkout main
-git cherry-pick <commit-hash>
-git push origin main
+git push origin fix/critical-bug
+# Create PR to Phase 2 main branch
 ```
 
-**Benefits**:
-- ✅ Critical bugfixes can be applied to both phases
-- ✅ Phase 2 production remains stable
-- ✅ Phase 3 gets all improvements
-- ✅ Single codebase, easier maintenance
+**Option 2: Fix in Phase 3 (if bug discovered during Phase 3 development)**
+```bash
+# Fix in Phase 3 repository
+cd yushan-microservices-user-service  # Phase 3 repo (phutruonnttn)
+git checkout main
+git checkout -b fix/critical-bug
+# ... fix bug ...
+git commit -m "Fix: Critical bug in user service"
+git push origin fix/critical-bug
+# Merge to Phase 3 main branch
+```
+
+**Option 3: Backport from Phase 3 to Phase 2 (if applicable)**
+```bash
+# If bugfix in Phase 3 is also needed in Phase 2
+# Manually apply the same fix to Phase 2 repository
+# Or cherry-pick if the change is compatible
+cd yushan-user-service  # Phase 2 repo
+git checkout main
+# Manually apply the fix or cherry-pick if compatible
+```
+
+**Considerations**:
+- ⚠️ Phase 2 and Phase 3 are separate repositories - no automatic sync
+- ⚠️ Bugfixes need to be applied manually to both if needed
+- ✅ Phase 2 production remains stable and independent
+- ✅ Phase 3 can experiment without affecting Phase 2
+- ✅ Can reference Phase 2 codebase when needed
 
 ## 🚢 Deployment Strategy
 
 ### Phase 2 Deployment (Current Production)
+- **Repository**: Original repositories (maugus0/yushan-*)
 - **Branch**: `main`
 - **Environment**: Digital Ocean
-- **Deployment**: Uses `main` branch for production
+- **Deployment**: Uses `main` branch from Phase 2 repositories for production
 - **Status**: ✅ Stable, continue using until Phase 3 is ready
 
 ### Phase 3 Deployment (Future Production)
-- **Development Branch**: `phase3-kubernetes`
-- **Production Branch**: `main` (after merge)
+- **Repository**: Development repositories (phutruonnttn/yushan-microservices-*)
+- **Branch**: `main` (Phase 3 development)
 - **Environment**: AWS EKS
 - **Deployment**: 
-  - Development/Staging: Deploy from `phase3-kubernetes` branch
-  - Production: Deploy from `main` branch after Phase 3 merge
+  - Development/Staging: Deploy from Phase 3 repositories `main` branch
+  - Production: Deploy from Phase 3 repositories `main` branch when ready
 
-### Parallel Deployment (Optional)
-If you need to run both Phase 2 and Phase 3 simultaneously:
+### Parallel Deployment
+Phase 2 and Phase 3 can run simultaneously as they are in separate repositories:
 
 ```bash
 # Phase 2 deployment (Digital Ocean)
+cd yushan-user-service  # Phase 2 repo (maugus0)
 git checkout main
-# Deploy to Digital Ocean
+# Deploy to Digital Ocean from Phase 2 repository
 
 # Phase 3 deployment (AWS EKS)
-git checkout phase3-kubernetes
-# Deploy to AWS EKS for testing
+cd yushan-microservices-user-service  # Phase 3 repo (phutruonnttn)
+git checkout main
+# Deploy to AWS EKS from Phase 3 repository
 ```
 
-**Note**: Once Phase 3 is production-ready and merged to `main`, Phase 2 deployment on Digital Ocean can be phased out.
+**Note**: 
+- Phase 2 and Phase 3 are completely independent deployments
+- Phase 2 continues running on Digital Ocean (stable production)
+- Phase 3 will run on AWS EKS (new production when ready)
+- Both can coexist during migration period
 
 ---
 
