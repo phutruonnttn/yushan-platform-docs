@@ -1195,15 +1195,25 @@ spring:
 
 **Decision**: Phase 3 will be developed directly in Phase 2 repositories using Git branch strategy.
 
-**Repositories** (same as Phase 2):
-- `yushan-microservices-user-service`
-- `yushan-microservices-content-service`
-- `yushan-microservices-engagement-service`
-- `yushan-microservices-gamification-service`
-- `yushan-microservices-analytics-service`
-- `yushan-microservices-api-gateway`
-- `yushan-microservices-config-server`
-- `yushan-microservices-service-registry`
+**Phase 2 Original Repositories** (NUS-ISS team):
+- [yushan-user-service](https://github.com/maugus0/yushan-user-service)
+- [yushan-content-service](https://github.com/maugus0/yushan-content-service)
+- [yushan-engagement-service](https://github.com/maugus0/yushan-engagement-service)
+- [yushan-gamification-service](https://github.com/maugus0/yushan-gamification-service)
+- [yushan-analytics-service](https://github.com/maugus0/yushan-analytics-service)
+- [yushan-api-gateway](https://github.com/maugus0/yushan-api-gateway)
+- [yushan-config-server](https://github.com/maugus0/yushan-config-server)
+- [yushan-platform-service-registry](https://github.com/maugus0/yushan-platform-service-registry)
+
+**Phase 3 Development Repositories** (phutruonnttn - cloned from Phase 2):
+- [yushan-microservices-user-service](https://github.com/phutruonnttn/yushan-microservices-user-service)
+- [yushan-microservices-content-service](https://github.com/phutruonnttn/yushan-microservices-content-service)
+- [yushan-microservices-engagement-service](https://github.com/phutruonnttn/yushan-microservices-engagement-service)
+- [yushan-microservices-gamification-service](https://github.com/phutruonnttn/yushan-microservices-gamification-service)
+- [yushan-microservices-analytics-service](https://github.com/phutruonnttn/yushan-microservices-analytics-service)
+- [yushan-microservices-api-gateway](https://github.com/phutruonnttn/yushan-microservices-api-gateway)
+- [yushan-microservices-config-server](https://github.com/phutruonnttn/yushan-microservices-config-server)
+- [yushan-microservices-service-registry](https://github.com/phutruonnttn/yushan-microservices-service-registry)
 
 **Repository Structure** (evolved):
 ```
