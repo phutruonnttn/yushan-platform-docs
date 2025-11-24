@@ -4,13 +4,14 @@
 
 ## 📋 Overview
 
-**Status**: 🔄 In Progress (35% Complete) | **Target**: AWS EKS Deployment
+**Status**: 🔄 In Progress (40% Complete) | **Target**: AWS EKS Deployment
 
 **Progress**: 
 - Rich Domain Model refactoring completed for 3 services (user-service, content-service, engagement-service)
 - Inter-service communication optimization completed (blocking write operations migrated to Kafka events)
 - Hybrid idempotency implementation completed (Redis + Database table for all event consumers)
 - Repository Pattern implementation completed for all services (user-service, content-service, engagement-service, gamification-service, analytics-service)
+- Aggregate boundaries and Domain Events implementation completed for content-service (Novel and Chapter aggregates separated, using internal Domain Events)
 
 Phase 3 represents a significant evolution from Phase 2, focusing on:
 - **Cloud-Native Architecture**: Kubernetes-native service discovery and orchestration
@@ -49,7 +50,16 @@ Phase 3 represents a significant evolution from Phase 2, focusing on:
   - ✅ gamification-service: UserProgressRepository with MyBatis implementation
   - ✅ analytics-service: AnalyticsRepository, HistoryRepository with MyBatis implementations
   - ✅ All services now depend on Repository interfaces instead of Mapper directly
-- [ ] Aggregate boundaries and Domain Events
+- [x] Aggregate boundaries and Domain Events ✅ **COMPLETED (content-service)**
+  - [x] content-service: Novel and Chapter aggregates separated
+    - Defined clear aggregate boundaries (Novel aggregate root, Chapter aggregate root)
+    - Implemented internal Domain Events (`ChapterStatisticsChangedEvent`)
+    - Replaced direct cross-aggregate calls with Domain Event publishing
+    - Created `ChapterDomainEventPublisher` and `ChapterDomainEventListener` for event-driven communication
+    - All tests passing (571 unit + 53 integration tests)
+  - [x] user-service: Acceptable as-is (Library and NovelLibrary are child entities of User aggregate, no cross-aggregate issues)
+  - [x] gamification-service: Acceptable as-is (UserProgress is well-defined aggregate root, no cross-aggregate issues)
+  - [x] engagement-service: Acceptable as-is (Comment, Review, Vote aggregates are well-separated, no cross-aggregate issues)
 - [ ] SAGA pattern for distributed transactions
 
 ### Resilience & Observability
@@ -211,45 +221,72 @@ public class NovelService {
 
 ---
 
-### 3. Aggregate Boundaries & Domain Events
+### 3. Aggregate Boundaries & Domain Events ✅ **COMPLETED (content-service)**
 
 **Problem**: Services cross aggregate boundaries with direct calls, violating DDD principles.
 
 **Solution**: Define clear aggregate boundaries and use Domain Events for inter-aggregate communication.
 
+**Status**: ✅ **COMPLETED for content-service**
+- Novel and Chapter are now separate aggregates with clear boundaries
+- Cross-aggregate communication uses internal Domain Events (Spring ApplicationEventPublisher)
+- All chapter operations that affect Novel statistics publish `ChapterStatisticsChangedEvent`
+- `ChapterDomainEventListener` handles events and updates Novel statistics within the same transaction
+- All tests passing (571 unit + 53 integration tests)
+
 **Aggregate Boundaries**:
 ```
 Content Service:
-├── Novel Aggregate (root)
+├── Novel Aggregate (root) ✅ Refactored
 │   ├── Novel entity
-│   ├── Chapter entities (child entities)
 │   └── Category references
-└── Domain Events: NovelCreated, NovelPublished, ChapterAdded
+├── Chapter Aggregate (root) ✅ Refactored
+│   └── Chapter entity
+└── Domain Events: ChapterStatisticsChangedEvent (internal, same transaction)
+
+User Service:
+├── User Aggregate (root) ✅ Acceptable as-is
+│   ├── User entity
+│   ├── Library (child entity)
+│   └── NovelLibrary (child entity)
+└── No cross-aggregate issues
 
 Engagement Service:
-├── Comment Aggregate (root)
+├── Comment Aggregate (root) ✅ Acceptable as-is
 │   └── Comment entity
-├── Review Aggregate (root)
+├── Review Aggregate (root) ✅ Acceptable as-is
 │   └── Review entity
-└── Domain Events: CommentCreated, ReviewSubmitted
+├── Vote Aggregate (root) ✅ Acceptable as-is
+│   └── Vote entity
+└── No cross-aggregate issues
 
 Gamification Service:
-├── UserProgress Aggregate (root)
+├── UserProgress Aggregate (root) ✅ Acceptable as-is
 │   ├── UserProgress entity
 │   ├── Achievement entities
 │   └── Transaction entities
-└── Domain Events: LevelUp, AchievementUnlocked
+└── No cross-aggregate issues
 ```
 
 **Domain Events vs Integration Events**:
 ```java
 // ✅ Domain Event (internal to aggregate, same transaction)
-@Entity
-public class Novel {
-    public void publish() {
-        this.status = NovelStatus.PUBLISHED;
-        // Domain event - same transaction
-        DomainEventPublisher.publish(new NovelPublishedEvent(this.id));
+// Example: ChapterStatisticsChangedEvent in content-service
+@Component
+public class ChapterDomainEventPublisher {
+    private final ApplicationEventPublisher eventPublisher;
+    
+    public void publishChapterStatisticsChanged(Integer novelId) {
+        eventPublisher.publishEvent(new ChapterStatisticsChangedEvent(novelId));
+    }
+}
+
+@EventListener
+@Transactional
+public class ChapterDomainEventListener {
+    public void handleChapterStatisticsChanged(ChapterStatisticsChangedEvent event) {
+        // Update Novel statistics within same transaction
+        novelService.updateNovelStatistics(event.getNovelId(), ...);
     }
 }
 
@@ -263,6 +300,43 @@ public class NovelService {
         
         // Integration event (external, after transaction)
         kafkaProducer.send(new NovelPublishedIntegrationEvent(novel.getId()));
+    }
+}
+```
+
+**Implementation Example (content-service)**:
+```java
+// ✅ Before: Direct cross-aggregate call (violates DDD)
+@Service
+public class ChapterService {
+    public void createChapter(ChapterCreateRequestDTO req) {
+        Chapter chapter = new Chapter(...);
+        chapterRepository.save(chapter);
+        novelService.updateNovelStatistics(req.getNovelId()); // ❌ Direct call
+    }
+}
+
+// ✅ After: Domain Event (respects aggregate boundaries)
+@Service
+public class ChapterService {
+    private final ChapterDomainEventPublisher eventPublisher;
+    
+    public void createChapter(ChapterCreateRequestDTO req) {
+        Chapter chapter = new Chapter(...);
+        chapterRepository.save(chapter);
+        eventPublisher.publishChapterStatisticsChanged(req.getNovelId()); // ✅ Event
+    }
+}
+
+// Event Listener handles the update
+@EventListener
+@Transactional
+public class ChapterDomainEventListener {
+    public void handleChapterStatisticsChanged(ChapterStatisticsChangedEvent event) {
+        // Recalculate and update Novel statistics
+        long chapterCount = chapterRepository.countPublishedByNovelId(event.getNovelId());
+        long wordCount = chapterRepository.sumPublishedWordCountByNovelId(event.getNovelId());
+        novelService.updateNovelStatistics(event.getNovelId(), chapterCount, wordCount);
     }
 }
 ```
@@ -1500,9 +1574,23 @@ git checkout main
     - GamificationService uses UserProgressRepository
   - [x] analytics-service: AnalyticsRepository, HistoryRepository with MyBatis implementations
     - All services (AnalyticsService, HistoryService) use Repository interfaces
-- [ ] Define clear aggregate boundaries
-- [ ] Implement Domain Events (internal)
-- [ ] Separate Domain Events from Integration Events
+- [x] Define clear aggregate boundaries ✅ **COMPLETED**
+  - [x] content-service: Novel and Chapter are separate aggregates with clear boundaries
+  - [x] user-service: Acceptable as-is (Library and NovelLibrary are child entities of User aggregate)
+  - [x] gamification-service: Acceptable as-is (UserProgress is well-defined aggregate root)
+  - [x] engagement-service: Acceptable as-is (Comment, Review, Vote aggregates are well-separated)
+- [x] Implement Domain Events (internal) ✅ **COMPLETED (content-service only)**
+  - [x] content-service: `ChapterStatisticsChangedEvent` for Novel statistics updates
+  - [x] content-service: `ChapterDomainEventPublisher` and `ChapterDomainEventListener` for event handling
+  - [x] content-service: All chapter operations (create, update, delete, publish) publish Domain Events
+  - [x] user-service: Not needed (no cross-aggregate issues)
+  - [x] gamification-service: Not needed (no cross-aggregate issues)
+  - [x] engagement-service: Not needed (no cross-aggregate issues)
+- [x] Separate Domain Events from Integration Events ✅ **COMPLETED (content-service)**
+  - [x] content-service: Domain Events (internal, same transaction) vs Integration Events (Kafka, cross-service)
+  - [x] content-service: `ChapterStatisticsChangedEvent` is Domain Event (Spring ApplicationEventPublisher)
+  - [x] content-service: Kafka events remain as Integration Events for cross-service communication
+  - [x] Other services: No changes needed (no cross-aggregate issues requiring Domain Events)
 
 ### Event-Driven Architecture
 - [x] ~~Create cache tables for cross-service data~~ (Not needed - write operations optimized via Kafka)
@@ -1575,5 +1663,5 @@ git checkout main
 
 ---
 
-**Last Updated**: November 2025 - Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) completed. All services now use Repository interfaces instead of Mapper directly.
+**Last Updated**: November 2025 - Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) completed. Content-service now uses internal Domain Events for cross-aggregate communication instead of direct calls.
 

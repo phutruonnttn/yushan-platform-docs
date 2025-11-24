@@ -215,7 +215,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 ### Phase 3: Kubernetes & AWS Deployment 🔄 **In Progress**
 
-**Status**: 🔄 In Progress (35% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) completed
+**Status**: 🔄 In Progress (40% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) completed
 
 **Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment. **Phase 3 is developed in separate repositories cloned from Phase 2 original repositories** (see [Phase 3 README](./docs/phase3-kubernetes/README.md) for details).
 
@@ -244,9 +244,17 @@ This repository contains comprehensive documentation for the **Yushan Platform**
   - **gamification-service**: `UserProgressRepository` with MyBatis implementation
   - **analytics-service**: `AnalyticsRepository`, `HistoryRepository` with MyBatis implementations
   - All services now depend on Repository interfaces instead of Mapper directly
+- ✅ **Aggregate Boundaries & Domain Events Implementation** (content-service completed, other services acceptable as-is)
+  - **content-service**: Novel and Chapter aggregates separated with clear boundaries
+  - **content-service**: Implemented internal Domain Events (`ChapterStatisticsChangedEvent`) for cross-aggregate communication
+  - **content-service**: Replaced direct calls from ChapterService to NovelService with Domain Event publishing
+  - **content-service**: Created `ChapterDomainEventPublisher` and `ChapterDomainEventListener` for event-driven updates
+  - **content-service**: Novel statistics updates now handled via Domain Events within the same transaction (strong consistency)
+  - **content-service**: All tests passing (571 unit + 53 integration tests)
+  - **user-service, gamification-service, engagement-service**: Acceptable as-is (no cross-aggregate issues requiring refactoring)
 
 **Planned Features**:
-- [ ] Aggregate boundaries and Domain Events
+- [x] ~~Aggregate boundaries and Domain Events (user-service, gamification-service, engagement-service)~~ ✅ **Not needed** - Other services are acceptable as-is (no cross-aggregate issues)
 - [ ] Kubernetes orchestration
 - [ ] Distributed tracing (Jaeger/Zipkin)
 - [ ] Saga pattern for distributed transactions
@@ -488,8 +496,9 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
    - ✅ Inter-service communication optimization completed (write operations migrated to Kafka events)
    - ✅ Hybrid idempotency implementation completed (Redis + Database table for all event consumers)
    - ✅ Repository Pattern implementation completed (all 5 services: user, content, engagement, gamification, analytics)
+   - ✅ Aggregate Boundaries & Domain Events completed (content-service: Novel and Chapter aggregates separated, other services acceptable as-is)
    - Review: [Phase 3 Architecture](./docs/phase3-kubernetes/README.md)
-   - Next steps: Aggregate Boundaries, Domain Events, Kubernetes migration
+   - Next steps: Kubernetes migration, distributed tracing, Saga pattern
 
 ### For Architects
 
@@ -510,7 +519,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 |-------|--------|------------|------------|-------|
 | **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
 | **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
-| **Phase 3** | 🔄 In Progress | 35% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services). **In Progress**: Aggregate boundaries, Domain Events, Kubernetes, distributed tracing, Saga pattern |
+| **Phase 3** | 🔄 In Progress | 40% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is). **In Progress**: Kubernetes, distributed tracing, Saga pattern |
 
 ## 🔧 Technology Evolution
 
@@ -653,5 +662,5 @@ This project is part of the Yushan Platform ecosystem.
 
 **Yushan Platform Documentation** - Complete guide to the gamified web novel reading platform 🚀
 
-**Last Updated**: November 2025 - Phase 3: Repository Pattern implementation completed for all services (35% complete)
+**Last Updated**: November 2025 - Phase 3: Repository Pattern implementation completed for all services + Aggregate Boundaries & Domain Events completed for content-service (40% complete)
 
