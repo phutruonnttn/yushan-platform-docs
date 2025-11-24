@@ -4,7 +4,7 @@
 
 ## 📋 Overview
 
-**Status**: 🔄 In Progress (40% Complete) | **Target**: AWS EKS Deployment
+**Status**: 🔄 In Progress (45% Complete) | **Target**: AWS EKS Deployment
 
 **Progress**: 
 - Rich Domain Model refactoring completed for 3 services (user-service, content-service, engagement-service)
@@ -12,6 +12,7 @@
 - Hybrid idempotency implementation completed (Redis + Database table for all event consumers)
 - Repository Pattern implementation completed for all services (user-service, content-service, engagement-service, gamification-service, analytics-service)
 - Aggregate boundaries and Domain Events implementation completed for content-service (Novel and Chapter aggregates separated, using internal Domain Events)
+- Kafka Events Transaction Boundary Fix completed for all services (events now publish after transaction commit)
 
 Phase 3 represents a significant evolution from Phase 2, focusing on:
 - **Cloud-Native Architecture**: Kubernetes-native service discovery and orchestration
@@ -1591,6 +1592,15 @@ git checkout main
   - [x] content-service: `ChapterStatisticsChangedEvent` is Domain Event (Spring ApplicationEventPublisher)
   - [x] content-service: Kafka events remain as Integration Events for cross-service communication
   - [x] Other services: No changes needed (no cross-aggregate issues requiring Domain Events)
+- [x] **Kafka Events Transaction Boundary Fix** ✅ **COMPLETED**
+  - [x] content-service: All Kafka events publish AFTER transaction commit
+  - [x] engagement-service: All Kafka events publish AFTER transaction commit
+  - [x] user-service: All Kafka events publish AFTER transaction commit
+  - [x] gamification-service: LevelUpEvent publishes AFTER transaction commit
+  - [x] analytics-service: No changes needed (consumer only)
+  - [x] Created `TransactionAwareKafkaPublisher` helper service for all services
+  - [x] Used `TransactionSynchronizationManager` to ensure events publish after commit
+  - [x] Ensures consistency: events only published when transaction commits successfully
 
 ### Event-Driven Architecture
 - [x] ~~Create cache tables for cross-service data~~ (Not needed - write operations optimized via Kafka)
@@ -1663,5 +1673,5 @@ git checkout main
 
 ---
 
-**Last Updated**: November 2025 - Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) completed. Content-service now uses internal Domain Events for cross-aggregate communication instead of direct calls.
+**Last Updated**: November 2025 - Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix (all services) completed. Content-service now uses internal Domain Events for cross-aggregate communication instead of direct calls. All Kafka Integration Events now publish AFTER transaction commit to ensure consistency.
 
