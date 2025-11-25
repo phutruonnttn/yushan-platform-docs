@@ -4,7 +4,7 @@
 
 ## 📋 Overview
 
-**Status**: 🔄 In Progress (45% Complete) | **Target**: AWS EKS Deployment
+**Status**: 🔄 In Progress (50% Complete) | **Target**: AWS EKS Deployment
 
 **Progress**: 
 - Rich Domain Model refactoring completed for 3 services (user-service, content-service, engagement-service)
@@ -13,6 +13,7 @@
 - Repository Pattern implementation completed for all services (user-service, content-service, engagement-service, gamification-service, analytics-service)
 - Aggregate boundaries and Domain Events implementation completed for content-service (Novel and Chapter aggregates separated, using internal Domain Events)
 - Kafka Events Transaction Boundary Fix completed for all services (events now publish after transaction commit)
+- Gateway-Level JWT Authentication with HMAC Signature completed for all services (centralized validation with cryptographic signature protection to prevent header forgery attacks)
 
 Phase 3 represents a significant evolution from Phase 2, focusing on:
 - **Cloud-Native Architecture**: Kubernetes-native service discovery and orchestration
@@ -73,6 +74,12 @@ Phase 3 represents a significant evolution from Phase 2, focusing on:
 - ✅ Gateway-level JWT authentication (centralized validation)
 - ✅ Token validation at API Gateway (reduce microservice load)
 - ✅ Consistent security policy across all services
+- ✅ HMAC Signature implementation (prevent header forgery attacks)
+  - ✅ Gateway generates HMAC-SHA256 signatures for validated requests
+  - ✅ Services verify HMAC signatures before trusting gateway headers
+  - ✅ Timestamp validation prevents replay attacks (5-minute tolerance)
+  - ✅ Constant-time comparison prevents timing attacks
+  - ✅ Shared secret configuration (`GATEWAY_HMAC_SECRET`) across Gateway and all services
 - ✅ Inactive user token validation (fix security issue where inactive users can still use tokens)
 
 ## 🏗️ Architecture Improvements
@@ -963,15 +970,16 @@ public class SagaInstance {
 
 ---
 
-### 10. Gateway-Level JWT Authentication
+### 10. Gateway-Level JWT Authentication ✅ **COMPLETED**
 
 **Problem**: Currently, each microservice validates JWT tokens independently, causing:
 - Redundant validation across services
 - Higher latency (validation at each service)
 - Inconsistent security policies
 - Higher CPU usage
+- Security risk: Headers can be forged by attackers
 
-**Solution**: Centralize JWT validation at API Gateway level.
+**Solution**: Centralize JWT validation at API Gateway level with HMAC signature protection.
 
 **Implementation**:
 ```java
@@ -1018,14 +1026,26 @@ public class JwtAuthenticationGatewayFilter implements GatewayFilter, Ordered {
         // Extract user info from token
         String userId = jwtUtil.extractUserId(token);
         String email = jwtUtil.extractEmail(token);
-        List<String> roles = jwtUtil.extractRoles(token);
+        String username = jwtUtil.extractUsername(token);
+        String role = jwtUtil.extractRole(token);
+        Integer status = jwtUtil.extractStatus(token);  // Extract user status
         
-        // Add user info to request headers for downstream services
+        // Generate HMAC signature to prevent header forgery
+        // Signature includes: userId|email|role|status|timestamp
+        long timestamp = System.currentTimeMillis();
+        String signature = HmacUtil.generateSignature(userId, email, role, status, timestamp, hmacSecret);
+        
+        // Add user info and HMAC signature to request headers for downstream services
         ServerHttpRequest modifiedRequest = request.mutate()
             .header("X-User-Id", userId)
             .header("X-User-Email", email)
-            .header("X-User-Roles", String.join(",", roles))
+            .header("X-User-Username", username != null ? username : "")
+            .header("X-User-Role", role != null ? role : "USER")
+            .header("X-User-Status", status != null ? String.valueOf(status) : "0")  // Forward user status
             .header("X-Gateway-Validated", "true")  // Mark as gateway-validated
+            .header("X-Gateway-Timestamp", String.valueOf(timestamp))  // Timestamp for signature verification
+            .header("X-Gateway-Signature", signature)  // HMAC signature to prevent forgery
+            .header("Authorization", authHeader)  // Keep original token for backward compatibility
             .build();
         
         return chain.filter(exchange.mutate().request(modifiedRequest).build());
@@ -1048,13 +1068,16 @@ public class JwtAuthenticationGatewayFilter implements GatewayFilter, Ordered {
 }
 ```
 
-**Microservice Simplification**:
+**Microservice Simplification with HMAC Verification**:
 ```java
-// ✅ Phase 3: Simplified Microservice Authentication
+// ✅ Phase 3: Simplified Microservice Authentication with HMAC Signature Verification
 
-// Microservices can trust gateway-validated requests
+// Microservices verify HMAC signature before trusting gateway-validated requests
 @Component
 public class GatewayAuthenticationFilter extends OncePerRequestFilter {
+    
+    @Value("${gateway.hmac.secret}")
+    private String hmacSecret;
     
     @Override
     protected void doFilterInternal(HttpServletRequest request, 
@@ -1064,14 +1087,69 @@ public class GatewayAuthenticationFilter extends OncePerRequestFilter {
         // Check if request is gateway-validated
         String gatewayValidated = request.getHeader("X-Gateway-Validated");
         if ("true".equals(gatewayValidated)) {
-            // Extract user info from headers (set by gateway)
+            // Extract user info and signature from headers
             String userId = request.getHeader("X-User-Id");
             String email = request.getHeader("X-User-Email");
-            String roles = request.getHeader("X-User-Roles");
+            String username = request.getHeader("X-User-Username");
+            String role = request.getHeader("X-User-Role");
+            String statusStr = request.getHeader("X-User-Status");  // Extract user status
+            String timestampStr = request.getHeader("X-Gateway-Timestamp");
+            String signature = request.getHeader("X-Gateway-Signature");
             
+            // Security: Verify HMAC signature to prevent header forgery
+            if (userId == null || email == null || timestampStr == null || signature == null) {
+                response.setStatus(HttpStatus.FORBIDDEN.value());
+                response.getWriter().write("{\"error\":\"Forbidden\",\"message\":\"Invalid gateway headers\"}");
+                return;
+            }
+            
+            try {
+                long timestamp = Long.parseLong(timestampStr);
+                
+                if (!HmacUtil.verifySignature(userId, email, role, statusStr, timestamp, signature, hmacSecret)) {
+                    // Invalid signature - reject request
+                    response.setStatus(HttpStatus.FORBIDDEN.value());
+                    response.getWriter().write("{\"error\":\"Forbidden\",\"message\":\"Invalid gateway signature\"}");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                response.setStatus(HttpStatus.FORBIDDEN.value());
+                response.getWriter().write("{\"error\":\"Forbidden\",\"message\":\"Invalid timestamp format\"}");
+                return;
+            }
+            
+            // Check user status - ensure user is enabled (not suspended/banned)
+            Integer status = 0; // Default to NORMAL/ACTIVE
+            if (statusStr != null && !statusStr.isBlank()) {
+                try {
+                    status = Integer.parseInt(statusStr);
+                } catch (NumberFormatException e) {
+                    status = 0; // Default to active
+                }
+            }
+            
+            CustomUserDetails userDetails = new CustomUserDetails(
+                userId, email, username, role != null ? role : "USER", status
+            );
+            
+            if (!userDetails.isEnabled()) {
+                // User is disabled, reject with 403 Forbidden
+                response.setStatus(HttpStatus.FORBIDDEN.value());
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"Forbidden\",\"message\":\"User account is disabled or suspended\",\"status\":403}");
+                return;
+            }
+            
+            // Signature verified and user is enabled - trust gateway headers
             // Set authentication context
-            Authentication authentication = new PreAuthenticatedAuthenticationToken(
-                userId, null, parseRoles(roles)
+            UsernamePasswordAuthenticationToken authentication = 
+                new UsernamePasswordAuthenticationToken(
+                    userDetails, 
+                    null, 
+                    userDetails.getAuthorities()
+                );
+            authentication.setDetails(
+                new WebAuthenticationDetailsSource().buildDetails(request)
             );
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } else {
@@ -1105,6 +1183,12 @@ spring:
 - ✅ **Consistent Security**: Centralized security policy
 - ✅ **Early Rejection**: Invalid tokens rejected before routing
 - ✅ **Simplified Services**: Microservices can trust gateway-validated requests
+- ✅ **HMAC Signature Protection**: Prevents header forgery attacks with cryptographic signatures
+- ✅ **Replay Attack Prevention**: Timestamp validation prevents reuse of old signatures
+- ✅ **Constant-Time Comparison**: Prevents timing attacks during signature verification
+- ✅ **User Status Forwarding**: Gateway forwards `X-User-Status` header from JWT token
+- ✅ **User Status Check**: Services verify user is enabled (`isEnabled()`) before authenticating
+- ✅ **Disabled User Rejection**: Disabled/suspended users are rejected with **403 Forbidden** response
 
 **Trade-offs**:
 - ⚠️ Gateway becomes critical security component (single point of failure)
@@ -1118,15 +1202,25 @@ spring:
 
 ---
 
-### 11. Inactive User Token Validation (Security Issue)
+### 11. Inactive User Token Validation (Security Issue) ✅ **PARTIALLY RESOLVED**
 
 **Problem**: Currently, when a user becomes inactive/suspended/banned after a token is created, the token can still be used in some services because those services check status from the JWT token (old status) instead of from the database.
 
-**Current Issue**:
-- **User Service**: ✅ Checks status from database → Token is rejected when user is inactive
-- **Other Services**: ❌ Check status from JWT token → Token still passes when user is inactive
+**Current Implementation**:
+- **API Gateway**: ✅ Extracts `status` from JWT token and forwards `X-User-Status` header
+- **User Service**: ✅ Checks status from database → Token is rejected when user is inactive (403 Forbidden)
+- **Other Services**: ✅ Check `X-User-Status` header and verify `isEnabled()` → Token is rejected when user is inactive (403 Forbidden)
 
-**Security Risk**: User is suspended but can still use old token to call APIs (except User Service).
+**Solution Implemented**:
+- Gateway extracts user `status` from JWT and forwards it in `X-User-Status` header
+- All services' `GatewayAuthenticationFilter` check `X-User-Status` and call `isEnabled()` before authenticating
+- Disabled/suspended users are rejected with **403 Forbidden** response
+- HMAC signature includes `status` to prevent tampering
+
+**Remaining Issue**:
+- If user status changes after JWT is issued, the old status in JWT is still forwarded until token expires
+- This is acceptable for most cases (tokens expire relatively quickly)
+- For stricter enforcement, see options below for real-time status checking
 
 **Discussed Solutions** (decision pending):
 
@@ -1628,11 +1722,17 @@ git checkout main
 - [ ] Set up Grafana dashboards
 
 ### Security Improvements
-- [ ] Implement Gateway-Level JWT Authentication
-- [ ] Add JWT validation filter to API Gateway
-- [ ] Simplify microservice authentication (trust gateway-validated requests)
-- [ ] Configure public endpoints whitelist
-- [ ] Add fallback authentication for service-to-service calls
+- [x] Implement Gateway-Level JWT Authentication ✅ **COMPLETED**
+  - [x] Add JWT validation filter to API Gateway (`JwtAuthenticationGatewayFilter`)
+  - [x] Implement HMAC signature generation in Gateway (`HmacUtil`)
+  - [x] Add HMAC signature verification in all services (`GatewayAuthenticationFilter`)
+  - [x] Configure shared secret (`GATEWAY_HMAC_SECRET`) across Gateway and all services
+  - [x] Implement timestamp validation (5-minute tolerance) to prevent replay attacks
+  - [x] Implement constant-time comparison to prevent timing attacks
+  - [x] Simplify microservice authentication (trust gateway-validated requests with signature verification)
+  - [x] Configure public endpoints whitelist (comprehensive list in `JwtAuthenticationGatewayFilter`)
+  - [x] Add fallback authentication for service-to-service calls (JWT validation for backward compatibility)
+  - [x] Update Feign clients to forward HMAC signature headers in inter-service calls
 - [ ] Implement gateway high availability
 - [ ] **Fix inactive user token validation issue** (choose one of options A-F)
   - [ ] Option A: Redis Cache - Full User Status

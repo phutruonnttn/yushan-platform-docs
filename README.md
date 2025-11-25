@@ -215,7 +215,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 ### Phase 3: Kubernetes & AWS Deployment 🔄 **In Progress**
 
-**Status**: 🔄 In Progress (45% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix completed
+**Status**: 🔄 In Progress (50% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature completed
 
 **Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment. **Phase 3 is developed in separate repositories cloned from Phase 2 original repositories** (see [Phase 3 README](./docs/phase3-kubernetes/README.md) for details).
 
@@ -258,6 +258,21 @@ This repository contains comprehensive documentation for the **Yushan Platform**
   - **Fixed Services**: content-service, engagement-service, user-service, gamification-service
   - **Benefits**: Events only published when transaction commits successfully, ensuring consistency between database state and event consumers
   - **Implementation**: Used `TransactionSynchronizationManager` to register callbacks that run after transaction commit
+- ✅ **Gateway-Level JWT Authentication with HMAC Signature** (all services completed)
+  - **Problem**: Each microservice validated JWT tokens independently, causing redundant validation, higher latency, and security risk of header forgery
+  - **Solution**: Centralized JWT validation at API Gateway level with HMAC-SHA256 signature protection
+  - **Implementation**: 
+    - Gateway validates JWT tokens and generates HMAC signatures for validated requests
+    - Gateway extracts user `status` from JWT and forwards `X-User-Status` header
+    - All services verify HMAC signatures before trusting gateway headers
+    - All services check `X-User-Status` and verify `isEnabled()` before authenticating
+    - Disabled/suspended users are rejected with **403 Forbidden** response
+    - Timestamp validation prevents replay attacks (5-minute tolerance)
+    - Constant-time comparison prevents timing attacks
+    - Shared secret configuration (`GATEWAY_HMAC_SECRET`) across Gateway and all services
+  - **Fixed Services**: api-gateway, user-service, content-service, engagement-service, gamification-service, analytics-service
+  - **Benefits**: Single validation point, reduced load on microservices, better performance, consistent security policy, protection against header forgery attacks, disabled user protection
+  - **Backward Compatibility**: Services maintain JWT validation fallback for direct service calls
 
 **Planned Features**:
 - [x] ~~Aggregate boundaries and Domain Events (user-service, gamification-service, engagement-service)~~ ✅ **Not needed** - Other services are acceptable as-is (no cross-aggregate issues)
@@ -481,7 +496,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 
 ### Phase 3 Documentation
 - **Architecture & Planning**: [Phase 3 Kubernetes README](./docs/phase3-kubernetes/README.md) - Comprehensive planning document with architecture improvements
-- **Status**: 🔄 In Progress (25% Complete) | Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation completed
+- **Status**: 🔄 In Progress (50% Complete) | Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature completed
 
 ## 🚀 Getting Started
 
@@ -504,6 +519,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
    - ✅ Repository Pattern implementation completed (all 5 services: user, content, engagement, gamification, analytics)
    - ✅ Aggregate Boundaries & Domain Events completed (content-service: Novel and Chapter aggregates separated, other services acceptable as-is)
    - ✅ Kafka Events Transaction Boundary Fix completed (all services: events now publish after transaction commit)
+   - ✅ Gateway-Level JWT Authentication with HMAC Signature completed (all services: centralized validation with cryptographic signature protection)
    - Review: [Phase 3 Architecture](./docs/phase3-kubernetes/README.md)
    - Next steps: Kubernetes migration, distributed tracing, Saga pattern
 
@@ -526,7 +542,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 |-------|--------|------------|------------|-------|
 | **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
 | **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
-| **Phase 3** | 🔄 In Progress | 45% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services). **In Progress**: Kubernetes, distributed tracing, Saga pattern |
+| **Phase 3** | 🔄 In Progress | 50% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services). **In Progress**: Kubernetes, distributed tracing, Saga pattern |
 
 ## 🔧 Technology Evolution
 
@@ -669,5 +685,5 @@ This project is part of the Yushan Platform ecosystem.
 
 **Yushan Platform Documentation** - Complete guide to the gamified web novel reading platform 🚀
 
-**Last Updated**: November 2025 - Phase 3: Repository Pattern implementation completed for all services + Aggregate Boundaries & Domain Events completed for content-service + Kafka Events Transaction Boundary Fix completed for all services (45% complete)
+**Last Updated**: November 2025 - Phase 3: Repository Pattern implementation completed for all services + Aggregate Boundaries & Domain Events completed for content-service + Kafka Events Transaction Boundary Fix completed for all services + Gateway-Level JWT Authentication with HMAC Signature completed for all services (50% complete)
 
