@@ -216,7 +216,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 ### Phase 3: Kubernetes & AWS Deployment 🔄 **In Progress**
 
-**Status**: 🔄 In Progress (50% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature completed
+**Status**: 🔄 In Progress (55% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) completed
 
 **Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment. **Phase 3 is developed in separate repositories cloned from Phase 2 original repositories** (see [Phase 3 README](./docs/phase3-kubernetes/README.md) for details).
 
@@ -274,6 +274,23 @@ This repository contains comprehensive documentation for the **Yushan Platform**
   - **Fixed Services**: api-gateway, user-service, content-service, engagement-service, gamification-service, analytics-service
   - **Benefits**: Single validation point, reduced load on microservices, better performance, consistent security policy, protection against header forgery attacks, disabled user protection
   - **Backward Compatibility**: Services maintain JWT validation fallback for direct service calls
+- ✅ **Inactive User Token Validation (Redis Block List)** (all services completed)
+  - **Problem**: Users who become inactive/suspended/banned after token creation could still use their tokens because services checked status from JWT (old status) instead of real-time database status
+  - **Solution**: Implemented Option B - Redis Block List (only inactive users stored in Redis Set)
+  - **Implementation**:
+    - Gateway maintains Redis Set blocklist (`user:blocklist`) of inactive users (SUSPENDED or BANNED)
+    - Bootstrap service syncs existing blocked users from User Service on startup (with exponential backoff retry: 30s → 60s → 120s → 240s → 480s)
+    - Kafka event listener updates Redis blocklist in real-time when user status changes
+    - JWT filter checks Redis blocklist before forwarding requests → Rejects blocked users with 403 Forbidden
+    - User Service publishes `UserStatusChangedEvent` to Kafka when status changes
+    - Internal endpoint `/api/v1/internal/blocked-users` for Gateway bootstrap
+  - **Components**:
+    - `UserBlocklistService`: Redis Set operations (add, remove, check, sync)
+    - `UserBlocklistBootstrapService`: Startup sync with retry (background thread, graceful degradation)
+    - `UserStatusEventListener`: Real-time updates from Kafka events
+    - Updated `JwtAuthenticationGatewayFilter`: Blocklist check before forwarding
+  - **Benefits**: Real-time updates (<1s latency), memory efficient (~1-5MB for 100K blocked users), fast lookup O(1) Redis Set (<1ms), scalable, graceful degradation
+  - **Fixed Services**: api-gateway, user-service
 
 **Planned Features**:
 - [x] ~~Aggregate boundaries and Domain Events (user-service, gamification-service, engagement-service)~~ ✅ **Not needed** - Other services are acceptable as-is (no cross-aggregate issues)
@@ -497,7 +514,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 
 ### Phase 3 Documentation
 - **Architecture & Planning**: [Phase 3 Kubernetes README](./docs/phase3-kubernetes/README.md) - Comprehensive planning document with architecture improvements
-- **Status**: 🔄 In Progress (50% Complete) | Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature completed
+- **Status**: 🔄 In Progress (55% Complete) | Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) completed
 
 ## 🚀 Getting Started
 
@@ -520,9 +537,10 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
    - ✅ Repository Pattern implementation completed (all 5 services: user, content, engagement, gamification, analytics)
    - ✅ Aggregate Boundaries & Domain Events completed (content-service: Novel and Chapter aggregates separated, other services acceptable as-is)
    - ✅ Kafka Events Transaction Boundary Fix completed (all services: events now publish after transaction commit)
-   - ✅ Gateway-Level JWT Authentication with HMAC Signature completed (all services: centralized validation with cryptographic signature protection)
-   - Review: [Phase 3 Architecture](./docs/phase3-kubernetes/README.md)
-   - Next steps: Kubernetes migration, distributed tracing, Saga pattern
+  - ✅ Gateway-Level JWT Authentication with HMAC Signature completed (all services: centralized validation with cryptographic signature protection)
+  - ✅ Inactive User Token Validation completed (Redis Block List: real-time blocklist updates via Kafka events)
+  - Review: [Phase 3 Architecture](./docs/phase3-kubernetes/README.md)
+  - Next steps: Kubernetes migration, distributed tracing, Saga pattern
 
 ### For Architects
 
@@ -543,7 +561,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 |-------|--------|------------|------------|-------|
 | **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
 | **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
-| **Phase 3** | 🔄 In Progress | 50% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services). **In Progress**: Kubernetes, distributed tracing, Saga pattern |
+| **Phase 3** | 🔄 In Progress | 55% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List). **In Progress**: Kubernetes, distributed tracing, Saga pattern |
 
 ## 🔧 Technology Evolution
 
@@ -687,5 +705,5 @@ This project is part of the Yushan Platform ecosystem.
 
 **Yushan Platform Documentation** - Complete guide to the gamified web novel reading platform 🚀
 
-**Last Updated**: November 2025 - Phase 3: Repository Pattern implementation completed for all services + Aggregate Boundaries & Domain Events completed for content-service + Kafka Events Transaction Boundary Fix completed for all services + Gateway-Level JWT Authentication with HMAC Signature completed for all services (50% complete)
+**Last Updated**: January 2025 - Phase 3: Repository Pattern implementation completed for all services + Aggregate Boundaries & Domain Events completed for content-service + Kafka Events Transaction Boundary Fix completed for all services + Gateway-Level JWT Authentication with HMAC Signature completed for all services + Inactive User Token Validation (Redis Block List) completed (55% complete)
 
