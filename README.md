@@ -77,8 +77,9 @@ This repository contains comprehensive documentation for the **Yushan Platform**
   - Load balancing support
 - [yushan-config-server](https://github.com/maugus0/yushan-config-server) - Spring Cloud Config Server (Port 8888)
   - Centralized configuration management
-  - Native profile with `configs/*.yml` files
+  - Git Backend - Reads configs from GitHub repository
   - Environment-specific overrides
+  - Automatic config refresh from Git repo
 - [yushan-api-gateway](https://github.com/maugus0/yushan-api-gateway) - Spring Cloud Gateway (Port 8080)
   - Single entry point for all API requests
   - Route definitions with path rewriting
@@ -145,7 +146,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 **Key Features**:
 - **Service Discovery**: Eureka-based service registration and discovery
-- **Centralized Configuration**: Spring Cloud Config Server with native profile
+- **Centralized Configuration**: Spring Cloud Config Server with Git Backend (configs stored in separate Git repo)
 - **API Gateway**: Single entry point with dynamic routing via Eureka
 - **Event-Driven Architecture**: Asynchronous communication via Apache Kafka
 - **Distributed Caching**: Redis for session management, throttling, and rankings
@@ -670,6 +671,7 @@ This project is part of the Yushan Platform ecosystem.
 ### Phase 3 (Kubernetes & AWS) - Development Repositories
 - [Service Registry](https://github.com/phutruonnttn/yushan-microservices-service-registry) (Phase 3 development)
 - [Config Server](https://github.com/phutruonnttn/yushan-microservices-config-server) (Phase 3 development)
+- [Config Repository](https://github.com/phutruonnttn/yushan-microservices-config-data) - Git repository storing all configuration files
 - [API Gateway](https://github.com/phutruonnttn/yushan-microservices-api-gateway) (Phase 3 development)
 - [User Service](https://github.com/phutruonnttn/yushan-microservices-user-service) (Phase 3 development)
 - [Content Service](https://github.com/phutruonnttn/yushan-microservices-content-service) (Phase 3 development)

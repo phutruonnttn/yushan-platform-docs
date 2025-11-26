@@ -1381,7 +1381,8 @@ spring:
 - [yushan-microservices-gamification-service](https://github.com/phutruonnttn/yushan-microservices-gamification-service)
 - [yushan-microservices-analytics-service](https://github.com/phutruonnttn/yushan-microservices-analytics-service)
 - [yushan-microservices-api-gateway](https://github.com/phutruonnttn/yushan-microservices-api-gateway)
-- [yushan-microservices-config-server](https://github.com/phutruonnttn/yushan-microservices-config-server)
+- [yushan-microservices-config-server](https://github.com/phutruonnttn/yushan-microservices-config-server) - Config Server (API layer)
+- [yushan-microservices-config-data](https://github.com/phutruonnttn/yushan-microservices-config-data) - Config Repository (Git storage for all configs)
 - [yushan-microservices-service-registry](https://github.com/phutruonnttn/yushan-microservices-service-registry)
 
 **Repository Structure** (evolved):
@@ -1451,7 +1452,8 @@ Phase 3 (Development - phutruonnttn):
 ├── yushan-microservices-gamification-service (cloned from Phase 2)
 ├── yushan-microservices-analytics-service (cloned from Phase 2)
 ├── yushan-microservices-api-gateway (cloned from Phase 2)
-├── yushan-microservices-config-server (cloned from Phase 2)
+├── yushan-microservices-config-server (cloned from Phase 2) - Config Server (API layer)
+├── yushan-microservices-config-data (new) - Config Repository (Git storage for all configs)
 └── yushan-microservices-service-registry (cloned from Phase 2)
 ```
 
