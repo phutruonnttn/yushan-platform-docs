@@ -4,7 +4,7 @@
 
 ## 📋 Overview
 
-**Status**: 🔄 In Progress (55% Complete) | **Target**: AWS EKS Deployment
+**Status**: 🔄 In Progress (60% Complete) | **Target**: AWS EKS Deployment
 
 **Progress**: 
 - Rich Domain Model refactoring completed for 3 services (user-service, content-service, engagement-service)
@@ -15,6 +15,7 @@
 - Kafka Events Transaction Boundary Fix completed for all services (events now publish after transaction commit)
 - Gateway-Level JWT Authentication with HMAC Signature completed for all services (centralized validation with cryptographic signature protection to prevent header forgery attacks)
 - Inactive User Token Validation issue resolved (Option B - Redis Block List implemented with real-time updates via Kafka events)
+- Circuit Breakers & Rate Limiters completed (comprehensive coverage: engagement-service, analytics-service, api-gateway)
 
 Phase 3 represents a significant evolution from Phase 2, focusing on:
 - **Cloud-Native Architecture**: Kubernetes-native service discovery and orchestration
@@ -66,10 +67,17 @@ Phase 3 represents a significant evolution from Phase 2, focusing on:
 - [ ] SAGA pattern for distributed transactions
 
 ### Resilience & Observability
-- ✅ Circuit breakers (comprehensive coverage)
-- ✅ Rate limiting
-- ✅ Distributed tracing
-- ✅ Enhanced monitoring and observability
+- ✅ **Circuit Breakers** (comprehensive coverage) ✅ **COMPLETED**
+  - ✅ engagement-service: 3 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient)
+  - ✅ analytics-service: 4 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient, EngagementServiceClient)
+  - ✅ api-gateway: 1 Feign client (UserServiceClient)
+  - ✅ user-service: 1 Feign client (ContentServiceClient) - already had Circuit Breaker
+  - ✅ All Feign client methods have fallback methods for graceful degradation
+- ✅ **Rate Limiting** ✅ **COMPLETED**
+  - ✅ engagement-service: Rate limiter on comment/review creation endpoints (10/60s and 5/60s)
+  - ✅ api-gateway: Global rate limiter (100 requests/60s) via `RateLimiterGatewayFilter`
+- [ ] Distributed tracing (Jaeger/Zipkin)
+- [ ] Enhanced monitoring and observability
 
 ### Security Improvements
 - ✅ Gateway-level JWT authentication (centralized validation)
@@ -704,37 +712,58 @@ public interface UserServiceClient {
 
 ---
 
-### 7. Circuit Breaker & Rate Limiter
+### 7. Circuit Breaker & Rate Limiter ✅ **COMPLETED**
 
 **Problem**: Missing circuit breakers and rate limiters in some services.
 
-**Solution**: Comprehensive resilience patterns.
+**Solution**: Comprehensive resilience patterns implemented across all services.
 
-**Circuit Breaker**:
+**Status**: ✅ **COMPLETED**
+- ✅ **engagement-service**: Circuit Breaker for 3 Feign clients + Rate Limiter on comment/review creation
+- ✅ **analytics-service**: Circuit Breaker for 4 Feign clients
+- ✅ **api-gateway**: Circuit Breaker for UserServiceClient + Global Rate Limiter
+- ✅ **user-service**: Already had Circuit Breaker (no changes needed)
+
+**Circuit Breaker Implementation**:
+
+**Key Implementation Details**:
+- Circuit Breakers are enabled via `spring.cloud.openfeign.circuitbreaker.enabled=true` in configuration
+- **No `@CircuitBreaker` annotations on Feign client methods** - Feign's automatic integration handles Circuit Breaker wrapping
+- Fallback classes (implementing Feign client interfaces) are used for graceful degradation
+- Circuit Breaker state can be monitored via Actuator endpoints (`/actuator/health` and `/actuator/metrics`)
+
+**Engagement Service**:
 ```java
-// ✅ Phase 3: Circuit Breaker
-
-@Service
-public class ContentServiceClient {
+@FeignClient(
+    name = "content-service", 
+    url = "${services.content.url:http://yushan-content-service:8082}",
+    fallback = ContentServiceClient.ContentServiceFallback.class
+)
+public interface ContentServiceClient {
     
-    @CircuitBreaker(name = "content-service", fallbackMethod = "getNovelFallback")
-    @RateLimiter(name = "content-service")
-    @Retry(name = "content-service")
-    public NovelDTO getNovel(Long novelId) {
-        return restTemplate.getForObject(
-            "http://content-service/novels/" + novelId,
-            NovelDTO.class
-        );
-    }
+    @GetMapping("/api/v1/novels/{novelId}")
+    // No @CircuitBreaker annotation - handled by Feign's automatic integration
+    ApiResponse<NovelDetailResponseDTO> getNovelById(@PathVariable("novelId") Integer novelId);
     
-    public NovelDTO getNovelFallback(Long novelId, Exception e) {
-        // Fallback: return cached data or default
-        return novelCacheRepository.findById(novelId)
-            .map(this::toDTO)
-            .orElseThrow(() -> new NovelNotFoundException(novelId));
+    @Component
+    class ContentServiceFallback implements ContentServiceClient {
+        @Override
+        public ApiResponse<NovelDetailResponseDTO> getNovelById(Integer novelId) {
+            log.error("Circuit breaker opened for content-service. Falling back for getNovelById request with {} id.", novelId);
+            return ApiResponse.error(503, "Content service temporarily unavailable", null);
+        }
+        // Fallback implementations for all other methods
     }
 }
 ```
+
+**Analytics Service**:
+- 4 Feign clients with Circuit Breaker: ContentServiceClient (11 methods), UserServiceClient (3 methods), GamificationServiceClient (3 methods), EngagementServiceClient (4 methods)
+- All methods have fallback methods and fallback classes
+
+**API Gateway**:
+- UserServiceClient with Circuit Breaker for `getBlockedUsers()` method
+- Fallback uses cached blocklist data when User Service is unavailable
 
 **Configuration**:
 ```yaml
@@ -743,35 +772,150 @@ resilience4j:
     instances:
       content-service:
         registerHealthIndicator: true
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        permittedNumberOfCallsInHalfOpenState: 3
-        automaticTransitionFromOpenToHalfOpenEnabled: true
-        waitDurationInOpenState: 10s
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
         failureRateThreshold: 50
-        eventConsumerBufferSize: 10
-  ratelimiter:
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        slowCallRateThreshold: 100
+        slowCallDurationThreshold: 5s
+  retry:
     instances:
       content-service:
-        limitForPeriod: 10
-        limitRefreshPeriod: 1s
-        timeoutDuration: 0
+        maxAttempts: 3
+        waitDuration: 1000ms
+        retryExceptions:
+          - java.net.SocketTimeoutException
+          - java.util.concurrent.TimeoutException
 ```
 
-**Rate Limiter**:
+**Rate Limiter Implementation**:
+
+**Engagement Service**:
+- Uses `RateLimiterInterceptor` (HandlerInterceptor pattern) to handle `@RateLimiter` annotations
+- Interceptor checks for `@RateLimiter` annotation on controller methods and applies rate limiting before method execution
+- Similar to API Gateway's `RateLimiterGatewayFilter` but for Spring MVC controllers
+
 ```java
+// Controller with @RateLimiter annotation
 @RestController
 @RequestMapping("/api/v1/comments")
 public class CommentController {
     
-    @RateLimiter(name = "comment-creation")
     @PostMapping
-    public ResponseEntity<CommentDTO> createComment(@RequestBody CreateCommentRequest request) {
-        // Rate limited endpoint
-        return ResponseEntity.ok(commentService.createComment(request));
+    @PreAuthorize("hasAnyRole('USER','AUTHOR','ADMIN')")
+    @RateLimiter(name = "comment-creation")
+    public ApiResponse<CommentResponseDTO> createComment(@RequestBody CommentCreateRequestDTO request) {
+        // Rate limited: 10 requests/60s (enforced by RateLimiterInterceptor)
+        return ApiResponse.success("Comment created successfully", commentService.createComment(userId, request));
+    }
+}
+
+@RestController
+@RequestMapping("/api/v1/reviews")
+public class ReviewController {
+    
+    @PostMapping
+    @PreAuthorize("hasAnyRole('USER','AUTHOR','ADMIN')")
+    @RateLimiter(name = "review-creation")
+    public ApiResponse<ReviewResponseDTO> createReview(@RequestBody ReviewCreateRequestDTO request) {
+        // Rate limited: 5 requests/60s (enforced by RateLimiterInterceptor)
+        return ApiResponse.success("Review created successfully", reviewService.createReview(userId, request));
+    }
+}
+
+// RateLimiterInterceptor implementation
+@Component
+public class RateLimiterInterceptor implements HandlerInterceptor {
+    
+    @Autowired
+    private RateLimiterRegistry rateLimiterRegistry;
+    
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        // Check for @RateLimiter annotation and apply rate limiting
+        // Returns false (stops request) if rate limit exceeded (HTTP 429)
+        // Returns true (continues) if permit acquired
     }
 }
 ```
+
+**API Gateway**:
+```java
+@Component
+public class RateLimiterGatewayFilter implements GlobalFilter, Ordered {
+    
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        RateLimiter rateLimiter = rateLimiterRegistry.rateLimiter("api-gateway-global");
+        boolean permitAcquired = rateLimiter.acquirePermission();
+        
+        if (!permitAcquired) {
+            return rateLimitExceeded(exchange); // 429 Too Many Requests
+        }
+        return chain.filter(exchange);
+    }
+}
+```
+
+**Rate Limiter Configuration**:
+```yaml
+resilience4j:
+  ratelimiter:
+    instances:
+      comment-creation:
+        limitForPeriod: 10
+        limitRefreshPeriod: 60s
+        timeoutDuration: 0ms
+      review-creation:
+        limitForPeriod: 5
+        limitRefreshPeriod: 60s
+        timeoutDuration: 0ms
+      api-gateway-global:
+        limitForPeriod: 100
+        limitRefreshPeriod: 60s
+        timeoutDuration: 0ms
+```
+
+**Conflict Resolution: Bootstrap Retry vs Circuit Breaker (API Gateway)**:
+
+The API Gateway's `UserBlocklistBootstrapService` has a custom exponential backoff retry mechanism for syncing blocked users. When the `UserServiceClient` (protected by Circuit Breaker) fails and the circuit opens, its fallback method returns an `ApiResponse.success()` with an empty list and a message like "User service temporarily unavailable...". 
+
+**Problem**: The bootstrap service would interpret this as a successful (though empty) response and stop retrying, effectively bypassing its exponential backoff logic.
+
+**Solution**: The `fetchBlockedUsers()` method in `UserBlocklistBootstrapService` explicitly detects Circuit Breaker fallback responses by checking the response message. If the message contains "temporarily unavailable", it throws a `RuntimeException`, which is then caught by `syncBlocklistWithRetry()`, allowing the custom exponential backoff retry logic to proceed as intended.
+
+**Implementation**:
+```java
+private Set<UUID> fetchBlockedUsers() {
+    ApiResponse<List<UUID>> response = userServiceClient.getBlockedUsers();
+    
+    // Detect Circuit Breaker fallback response
+    String message = response.getMessage();
+    if (message != null && message.contains("temporarily unavailable")) {
+        log.warn("Circuit Breaker fallback detected - User Service is unavailable");
+        throw new RuntimeException("User Service unavailable (Circuit Breaker fallback)");
+    }
+    
+    // Process normal response...
+}
+```
+
+**Benefits**:
+- ✅ **Fault Isolation**: Prevents cascading failures across services
+- ✅ **Graceful Degradation**: Fallback methods ensure services continue operating
+- ✅ **Spam Prevention**: Rate limiting prevents abuse on critical endpoints
+- ✅ **DDoS Protection**: Global rate limiter at gateway protects all downstream services
+- ✅ **Resource Protection**: Limits calls to failing services, reducing resource consumption
+- ✅ **Bootstrap Resilience**: Custom retry logic works correctly with Circuit Breaker fallbacks
+
+**Testing & Verification**:
+- ✅ **Engagement Service**: Circuit Breaker opens correctly when content-service is down (state = 1.0 = OPEN), fallback methods invoked, logs confirm "Circuit breaker opened"
+- ✅ **Engagement Service**: Rate Limiter triggers correctly (HTTP 429) when limits exceeded (comment: 10/60s, review: 5/60s)
+- ✅ **Analytics Service**: Circuit Breaker opens correctly when upstream services are down, fallback data returned (totalNovels: 0, totalComments: 0)
+- ✅ **API Gateway**: Circuit Breaker opens correctly when user-service is down (state = 1.0 = OPEN), bootstrap retry continues with exponential backoff
 
 ---
 
@@ -1772,8 +1916,21 @@ git checkout main
   - Response time improved from 600-700ms to <100ms
 
 ### Resilience & Observability
-- [ ] Add circuit breakers to all service calls
-- [ ] Implement rate limiting on critical endpoints
+- [x] **Add circuit breakers to all service calls** ✅ **COMPLETED**
+  - [x] engagement-service: Circuit Breaker for 3 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient)
+  - [x] analytics-service: Circuit Breaker for 4 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient, EngagementServiceClient)
+  - [x] api-gateway: Circuit Breaker for UserServiceClient (blocked users sync)
+  - [x] user-service: Already had Circuit Breaker for ContentServiceClient
+  - [x] All Feign client methods have fallback methods/classes for graceful degradation
+  - [x] Circuit Breakers enabled via `spring.cloud.openfeign.circuitbreaker.enabled=true` (no `@CircuitBreaker` annotations on Feign methods)
+  - [x] Resilience4j configuration added to all service config files
+  - [x] Circuit Breaker state monitoring via Actuator endpoints
+  - [x] Conflict resolution between bootstrap retry and Circuit Breaker fallback in API Gateway
+- [x] **Implement rate limiting on critical endpoints** ✅ **COMPLETED**
+  - [x] engagement-service: Rate limiter on comment creation (10/60s) and review creation (5/60s) via `RateLimiterInterceptor` (HandlerInterceptor pattern)
+  - [x] api-gateway: Global rate limiter (100 requests/60s) via `RateLimiterGatewayFilter` (GlobalFilter)
+  - [x] Resilience4j Rate Limiter configuration added
+  - [x] All Rate Limiters tested and verified working correctly (HTTP 429 when limits exceeded)
 - [ ] Set up distributed tracing (Jaeger/Zipkin)
 - [ ] Configure Prometheus metrics
 - [ ] Set up Grafana dashboards
@@ -1833,5 +1990,5 @@ git checkout main
 
 ---
 
-**Last Updated**: January 2025 - Inactive User Token Validation issue resolved (Option B - Redis Block List implemented). Gateway now maintains Redis blocklist of inactive users with real-time updates via Kafka events. Bootstrap service syncs blocked users on startup with exponential backoff retry (30s → 480s) to handle startup order issues. JWT filter checks Redis blocklist before forwarding requests, rejecting blocked users with 403 Forbidden. All components implemented: UserBlocklistService, UserBlocklistBootstrapService, UserStatusEventListener, and updated JwtAuthenticationGatewayFilter.
+**Last Updated**: January 2025 - Circuit Breakers & Rate Limiters implementation completed (comprehensive coverage). Engagement Service: Circuit Breaker for 3 Feign clients + Rate Limiter on comment/review creation (10/60s and 5/60s). Analytics Service: Circuit Breaker for 4 Feign clients. API Gateway: Circuit Breaker for UserServiceClient + Global Rate Limiter (100 requests/60s) via RateLimiterGatewayFilter. All Feign client methods have fallback methods for graceful degradation. Resilience4j configuration added to all service config files. Inactive User Token Validation issue resolved (Option B - Redis Block List implemented). Gateway now maintains Redis blocklist of inactive users with real-time updates via Kafka events. Bootstrap service syncs blocked users on startup with exponential backoff retry (30s → 480s) to handle startup order issues. JWT filter checks Redis blocklist before forwarding requests, rejecting blocked users with 403 Forbidden. All components implemented: UserBlocklistService, UserBlocklistBootstrapService, UserStatusEventListener, and updated JwtAuthenticationGatewayFilter.
 

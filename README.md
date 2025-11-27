@@ -216,7 +216,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 ### Phase 3: Kubernetes & AWS Deployment 🔄 **In Progress**
 
-**Status**: 🔄 In Progress (55% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) completed
+**Status**: 🔄 In Progress (60% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) + Circuit Breakers & Rate Limiters (comprehensive coverage) completed
 
 **Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment. **Phase 3 is developed in separate repositories cloned from Phase 2 original repositories** (see [Phase 3 README](./docs/phase3-kubernetes/README.md) for details).
 
@@ -291,6 +291,23 @@ This repository contains comprehensive documentation for the **Yushan Platform**
     - Updated `JwtAuthenticationGatewayFilter`: Blocklist check before forwarding
   - **Benefits**: Real-time updates (<1s latency), memory efficient (~1-5MB for 100K blocked users), fast lookup O(1) Redis Set (<1ms), scalable, graceful degradation
   - **Fixed Services**: api-gateway, user-service
+- ✅ **Circuit Breakers & Rate Limiters** (comprehensive coverage completed)
+  - **Problem**: Missing circuit breakers and rate limiters in some services, causing potential cascading failures and lack of protection against abuse
+  - **Solution**: Comprehensive resilience patterns implemented using Resilience4j
+  - **Implementation**:
+    - **engagement-service**: Circuit Breaker for 3 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient) + Rate Limiter on comment creation (10 requests/60s) and review creation (5 requests/60s) via `RateLimiterInterceptor`
+    - **analytics-service**: Circuit Breaker for 4 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient, EngagementServiceClient)
+    - **api-gateway**: Circuit Breaker for UserServiceClient (blocked users sync) + Global Rate Limiter (100 requests/60s) via `RateLimiterGatewayFilter`
+    - **user-service**: Already had Circuit Breaker (no changes needed)
+  - **Key Features**:
+    - Circuit Breakers enabled via `spring.cloud.openfeign.circuitbreaker.enabled=true` (no `@CircuitBreaker` annotations on Feign methods)
+    - Fallback classes implement Feign client interfaces for graceful degradation
+    - Rate Limiters use `RateLimiterRegistry` with `@RateLimiter` annotations (engagement-service) or `GlobalFilter` (api-gateway)
+    - Circuit Breaker state monitoring via Actuator endpoints (`/actuator/health`, `/actuator/metrics`)
+    - Conflict resolution between bootstrap retry and Circuit Breaker fallback in API Gateway
+  - **Configuration**: Resilience4j with COUNT_BASED sliding window, 50% failure rate threshold, 10s wait duration in open state
+  - **Testing**: All Circuit Breakers and Rate Limiters verified and working correctly
+  - **Fixed Services**: engagement-service, analytics-service, api-gateway
 
 **Planned Features**:
 - [x] ~~Aggregate boundaries and Domain Events (user-service, gamification-service, engagement-service)~~ ✅ **Not needed** - Other services are acceptable as-is (no cross-aggregate issues)
@@ -539,6 +556,11 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
    - ✅ Kafka Events Transaction Boundary Fix completed (all services: events now publish after transaction commit)
   - ✅ Gateway-Level JWT Authentication with HMAC Signature completed (all services: centralized validation with cryptographic signature protection)
   - ✅ Inactive User Token Validation completed (Redis Block List: real-time blocklist updates via Kafka events)
+  - ✅ Circuit Breakers & Rate Limiters completed (comprehensive coverage: engagement-service, analytics-service, api-gateway)
+    - Engagement Service: Circuit Breaker for 3 Feign clients + Rate Limiter on comment/review creation (10/60s and 5/60s) via `RateLimiterInterceptor`
+    - Analytics Service: Circuit Breaker for 4 Feign clients with fallback methods
+    - API Gateway: Circuit Breaker for UserServiceClient + Global Rate Limiter (100 requests/60s) via `RateLimiterGatewayFilter`
+    - All implementations tested and verified working correctly
   - Review: [Phase 3 Architecture](./docs/phase3-kubernetes/README.md)
   - Next steps: Kubernetes migration, distributed tracing, Saga pattern
 
@@ -561,7 +583,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 |-------|--------|------------|------------|-------|
 | **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
 | **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
-| **Phase 3** | 🔄 In Progress | 55% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List). **In Progress**: Kubernetes, distributed tracing, Saga pattern |
+| **Phase 3** | 🔄 In Progress | 60% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List), Circuit Breakers & Rate Limiters (comprehensive coverage). **In Progress**: Kubernetes, distributed tracing, Saga pattern |
 
 ## 🔧 Technology Evolution
 
@@ -705,5 +727,5 @@ This project is part of the Yushan Platform ecosystem.
 
 **Yushan Platform Documentation** - Complete guide to the gamified web novel reading platform 🚀
 
-**Last Updated**: January 2025 - Phase 3: Repository Pattern implementation completed for all services + Aggregate Boundaries & Domain Events completed for content-service + Kafka Events Transaction Boundary Fix completed for all services + Gateway-Level JWT Authentication with HMAC Signature completed for all services + Inactive User Token Validation (Redis Block List) completed (55% complete)
+**Last Updated**: January 2025 - Phase 3: Repository Pattern implementation completed for all services + Aggregate Boundaries & Domain Events completed for content-service + Kafka Events Transaction Boundary Fix completed for all services + Gateway-Level JWT Authentication with HMAC Signature completed for all services + Inactive User Token Validation (Redis Block List) completed + Circuit Breakers & Rate Limiters completed (comprehensive coverage: engagement-service, analytics-service, api-gateway) (60% complete)
 
