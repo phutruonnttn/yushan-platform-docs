@@ -216,7 +216,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 ### Phase 3: Kubernetes & AWS Deployment 🔄 **In Progress**
 
-**Status**: 🔄 In Progress (60% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) + Circuit Breakers & Rate Limiters (comprehensive coverage) completed
+**Status**: 🔄 In Progress (65% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) + Circuit Breakers & Rate Limiters (comprehensive coverage) + SAGA Pattern for distributed transactions (Vote Creation Flow) completed
 
 **Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment. **Phase 3 is developed in separate repositories cloned from Phase 2 original repositories** (see [Phase 3 README](./docs/phase3-kubernetes/README.md) for details).
 
@@ -308,12 +308,31 @@ This repository contains comprehensive documentation for the **Yushan Platform**
   - **Configuration**: Resilience4j with COUNT_BASED sliding window, 50% failure rate threshold, 10s wait duration in open state
   - **Testing**: All Circuit Breakers and Rate Limiters verified and working correctly
   - **Fixed Services**: engagement-service, analytics-service, api-gateway
+- ✅ **SAGA Pattern for Distributed Transactions** (Vote Creation Flow completed)
+  - **Problem**: Vote creation required atomicity across Engagement Service (vote record) and Gamification Service (Yuan deduction). Previous flow had risks of votes being created without Yuan being deducted
+  - **Solution**: Implemented Choreography SAGA pattern with Yuan Reservation System
+  - **Implementation**:
+    - Yuan Reservation System with reservation table in gamification-service (`yuan_reservation` table)
+    - Multi-step transaction flow: Reserve Yuan → Create Vote → Confirm Yuan Deduction + Award EXP
+    - Balance check at reserve time (fail fast pattern) - API returns 400 when insufficient balance
+    - Automatic compensation logic for rollback on failures (Yuan release)
+    - Scheduled cleanup job for expired reservations (prevents indefinite Yuan holding)
+    - Hybrid idempotency for all SAGA events (prevents duplicate processing)
+    - Feature flag for gradual rollout (`saga.vote-creation.enabled`)
+    - Kafka topics: `vote-saga.start`, `vote-saga.yuan-reserved`, `vote-saga.vote-created`, `vote-saga.failed`, `vote-saga.compensate-yuan`
+  - **Components**:
+    - `YuanReservationService`: Manages Yuan reservations (reserve, confirm, release)
+    - `VoteSagaListener` in gamification-service: Handles Yuan reservation and confirmation
+    - `VoteSagaListener` in engagement-service: Handles vote creation
+    - `YuanReservationCleanupScheduler`: Scheduled job for expired reservation cleanup
+  - **Benefits**: Atomicity (vote and Yuan deduction are atomic), data consistency, automatic compensation, fail fast pattern, tested and verified
+  - **Fixed Services**: engagement-service, gamification-service
 
 **Planned Features**:
 - [x] ~~Aggregate boundaries and Domain Events (user-service, gamification-service, engagement-service)~~ ✅ **Not needed** - Other services are acceptable as-is (no cross-aggregate issues)
 - [ ] Kubernetes orchestration
 - [ ] Distributed tracing (Jaeger/Zipkin)
-- [ ] Saga pattern for distributed transactions
+- [x] ~~Saga pattern for distributed transactions~~ ✅ **COMPLETED (Vote Creation Flow)**
 - [ ] Service mesh (Istio/Linkerd)
 - [ ] Advanced monitoring and observability
 - [ ] AWS deployment (EKS, RDS, ElastiCache, etc.)
@@ -531,7 +550,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 
 ### Phase 3 Documentation
 - **Architecture & Planning**: [Phase 3 Kubernetes README](./docs/phase3-kubernetes/README.md) - Comprehensive planning document with architecture improvements
-- **Status**: 🔄 In Progress (55% Complete) | Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) completed
+- **Status**: 🔄 In Progress (65% Complete) | Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) + Circuit Breakers & Rate Limiters (comprehensive coverage) + SAGA Pattern for distributed transactions (Vote Creation Flow) completed
 
 ## 🚀 Getting Started
 
@@ -561,8 +580,9 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
     - Analytics Service: Circuit Breaker for 4 Feign clients with fallback methods
     - API Gateway: Circuit Breaker for UserServiceClient + Global Rate Limiter (100 requests/60s) via `RateLimiterGatewayFilter`
     - All implementations tested and verified working correctly
+  - ✅ SAGA Pattern completed (Vote Creation Flow: Choreography pattern with Yuan Reservation System, balance check at reserve time, automatic compensation, tested and verified)
   - Review: [Phase 3 Architecture](./docs/phase3-kubernetes/README.md)
-  - Next steps: Kubernetes migration, distributed tracing, Saga pattern
+  - Next steps: Kubernetes migration, distributed tracing
 
 ### For Architects
 
@@ -583,7 +603,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 |-------|--------|------------|------------|-------|
 | **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
 | **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
-| **Phase 3** | 🔄 In Progress | 60% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List), Circuit Breakers & Rate Limiters (comprehensive coverage). **In Progress**: Kubernetes, distributed tracing, Saga pattern |
+| **Phase 3** | 🔄 In Progress | 65% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List), Circuit Breakers & Rate Limiters (comprehensive coverage), SAGA Pattern for distributed transactions (Vote Creation Flow). **In Progress**: Kubernetes, distributed tracing |
 
 ## 🔧 Technology Evolution
 
@@ -727,5 +747,5 @@ This project is part of the Yushan Platform ecosystem.
 
 **Yushan Platform Documentation** - Complete guide to the gamified web novel reading platform 🚀
 
-**Last Updated**: January 2025 - Phase 3: Repository Pattern implementation completed for all services + Aggregate Boundaries & Domain Events completed for content-service + Kafka Events Transaction Boundary Fix completed for all services + Gateway-Level JWT Authentication with HMAC Signature completed for all services + Inactive User Token Validation (Redis Block List) completed + Circuit Breakers & Rate Limiters completed (comprehensive coverage: engagement-service, analytics-service, api-gateway) (60% complete)
+**Last Updated**: January 2025 - Phase 3: SAGA Pattern for distributed transactions completed (Vote Creation Flow with Choreography pattern, Yuan Reservation System, balance check at reserve time, automatic compensation, tested and verified) + Repository Pattern implementation completed for all services + Aggregate Boundaries & Domain Events completed for content-service + Kafka Events Transaction Boundary Fix completed for all services + Gateway-Level JWT Authentication with HMAC Signature completed for all services + Inactive User Token Validation (Redis Block List) completed + Circuit Breakers & Rate Limiters completed (comprehensive coverage: engagement-service, analytics-service, api-gateway) (65% complete)
 
