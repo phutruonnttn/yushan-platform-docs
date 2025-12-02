@@ -55,42 +55,42 @@ Phase 3 represents a significant evolution from Phase 2, focusing on:
   - ✅ gamification-service: UserProgressRepository with MyBatis implementation
   - ✅ analytics-service: AnalyticsRepository, HistoryRepository with MyBatis implementations
   - ✅ All services now depend on Repository interfaces instead of Mapper directly
-- [x] Aggregate boundaries and Domain Events ✅ **COMPLETED (content-service)**
-  - [x] content-service: Novel and Chapter aggregates separated
+- ✅ Aggregate boundaries and Domain Events (content-service)
+  - ✅ content-service: Novel and Chapter aggregates separated
     - Defined clear aggregate boundaries (Novel aggregate root, Chapter aggregate root)
     - Implemented internal Domain Events (`ChapterStatisticsChangedEvent`)
     - Replaced direct cross-aggregate calls with Domain Event publishing
     - Created `ChapterDomainEventPublisher` and `ChapterDomainEventListener` for event-driven communication
     - All tests passing (571 unit + 53 integration tests)
-  - [x] user-service: Acceptable as-is (Library and NovelLibrary are child entities of User aggregate, no cross-aggregate issues)
-  - [x] gamification-service: Acceptable as-is (UserProgress is well-defined aggregate root, no cross-aggregate issues)
-  - [x] engagement-service: Acceptable as-is (Comment, Review, Vote aggregates are well-separated, no cross-aggregate issues)
-- [x] **SAGA pattern for distributed transactions** ✅ **COMPLETED (Vote Creation Flow)**
-  - [x] Implemented Choreography SAGA pattern for Vote Creation Flow
+  - ✅ user-service: Acceptable as-is (Library and NovelLibrary are child entities of User aggregate, no cross-aggregate issues)
+  - ✅ gamification-service: Acceptable as-is (UserProgress is well-defined aggregate root, no cross-aggregate issues)
+  - ✅ engagement-service: Acceptable as-is (Comment, Review, Vote aggregates are well-separated, no cross-aggregate issues)
+- ✅ **SAGA pattern for distributed transactions** (Vote Creation Flow)
+  - ✅ Implemented Choreography SAGA pattern for Vote Creation Flow
     - Yuan Reservation System with reservation table in gamification-service
     - Balance check at reserve time (fail fast pattern)
     - Multi-step transaction flow: Reserve Yuan → Create Vote → Confirm Yuan
     - Compensation logic for rollback on failures
     - Scheduled cleanup job for expired reservations
-  - [x] engagement-service: VoteSagaListener for handling SAGA events
-  - [x] gamification-service: VoteSagaListener for Yuan reservation and confirmation
-  - [x] Hybrid idempotency for all SAGA events (prevents duplicate processing)
-  - [x] Feature flag for gradual rollout (`saga.vote-creation.enabled`)
-  - [x] API contract fix: Balance check before SAGA starts (returns 400 when insufficient balance)
-  - [x] Tested and verified: Works correctly with sufficient balance and properly rejects when balance = 0
+  - ✅ engagement-service: VoteSagaListener for handling SAGA events
+  - ✅ gamification-service: VoteSagaListener for Yuan reservation and confirmation
+  - ✅ Hybrid idempotency for all SAGA events (prevents duplicate processing)
+  - ✅ Feature flag for gradual rollout (`saga.vote-creation.enabled`)
+  - ✅ API contract fix: Balance check before SAGA starts (returns 400 when insufficient balance)
+  - ✅ Tested and verified: Works correctly with sufficient balance and properly rejects when balance = 0
 
 ### Resilience & Observability
-- ✅ **Circuit Breakers** (comprehensive coverage) ✅ **COMPLETED**
+- ✅ **Circuit Breakers** (comprehensive coverage)
   - ✅ engagement-service: 3 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient)
   - ✅ analytics-service: 4 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient, EngagementServiceClient)
   - ✅ api-gateway: 1 Feign client (UserServiceClient)
   - ✅ user-service: 1 Feign client (ContentServiceClient) - already had Circuit Breaker
   - ✅ All Feign client methods have fallback methods for graceful degradation
-- ✅ **Rate Limiting** ✅ **COMPLETED**
+- ✅ **Rate Limiting**
   - ✅ engagement-service: Rate limiter on comment/review creation endpoints (10/60s and 5/60s)
   - ✅ api-gateway: Global rate limiter (100 requests/60s) via `RateLimiterGatewayFilter`
-- [ ] Distributed tracing (Jaeger/Zipkin)
-- [ ] Enhanced monitoring and observability
+- ⬜ Distributed tracing (Jaeger/Zipkin)
+- ⬜ Enhanced monitoring and observability
 
 ### Security Improvements
 - ✅ Gateway-level JWT authentication (centralized validation)
@@ -110,49 +110,7 @@ Phase 3 represents a significant evolution from Phase 2, focusing on:
 
 **Problem**: Current entities are Anemic Domain Models - they only contain data without business logic.
 
-**Solution**: Move business logic into domain entities and aggregates.
-
-**Example**:
-```java
-// ❌ Phase 2: Anemic Domain Model
-@Entity
-public class Novel {
-    private Long id;
-    private String title;
-    private NovelStatus status;
-    // No business logic
-}
-
-// Service directly sets status
-novel.setStatus(NovelStatus.PUBLISHED);
-novelMapper.update(novel);
-
-// ✅ Phase 3: Rich Domain Model
-@Entity
-public class Novel {
-    private Long id;
-    private String title;
-    private NovelStatus status;
-    
-    // Business logic in domain
-    public void publish() {
-        if (this.status == NovelStatus.DRAFT) {
-            this.status = NovelStatus.PUBLISHED;
-            DomainEventPublisher.publish(new NovelPublishedEvent(this.id));
-        } else {
-            throw new IllegalStateException("Only draft novels can be published");
-        }
-    }
-    
-    public void archive() {
-        this.status = NovelStatus.ARCHIVED;
-        DomainEventPublisher.publish(new NovelArchivedEvent(this.id));
-    }
-}
-
-// Service calls domain method
-novel.publish(); // Domain handles state transition
-```
+**Solution**: Move business logic into domain entities and aggregates (services call rich domain methods instead of setting fields directly).
 
 **Benefits**:
 - Encapsulation of business rules
@@ -162,7 +120,7 @@ novel.publish(); // Domain handles state transition
 
 ---
 
-### 2. Repository Pattern Implementation ✅ **COMPLETED**
+### 2. Repository Pattern Implementation
 
 **Problem**: Services directly call mappers, violating separation of concerns.
 
@@ -251,13 +209,13 @@ public class NovelService {
 
 ---
 
-### 3. Aggregate Boundaries & Domain Events ✅ **COMPLETED (content-service)**
+### 3. Aggregate Boundaries & Domain Events (content-service)
 
 **Problem**: Services cross aggregate boundaries with direct calls, violating DDD principles.
 
 **Solution**: Define clear aggregate boundaries and use Domain Events for inter-aggregate communication.
 
-**Status**: ✅ **COMPLETED for content-service**
+**Status**: ✅ Completed for content-service
 - Novel and Chapter are now separate aggregates with clear boundaries
 - Cross-aggregate communication uses internal Domain Events (Spring ApplicationEventPublisher)
 - All chapter operations that affect Novel statistics publish `ChapterStatisticsChangedEvent`
@@ -391,7 +349,7 @@ public void publishNovel(Long novelId) {
 
 ---
 
-### 4. Inter-Service Communication Optimization ✅ **COMPLETED**
+### 4. Inter-Service Communication Optimization
 
 **Problem**: Too many synchronous API calls between services, especially blocking write operations that affect response times.
 
@@ -527,7 +485,7 @@ kafkaEventProducerService.publishNovelRatingUpdateEvent(novelId, avgRating, revi
 
 ---
 
-### 5. Hybrid Idempotency for Event Consumption ✅ **COMPLETED**
+### 5. Hybrid Idempotency for Event Consumption
 
 **Problem**: Events might be processed multiple times, causing duplicate side effects. Additionally, using only Redis for idempotency checks risks data loss when Redis is restarted.
 
@@ -725,14 +683,14 @@ public interface UserServiceClient {
 
 ---
 
-### 7. Circuit Breaker & Rate Limiter ✅ **COMPLETED**
+### 7. Circuit Breaker & Rate Limiter
 
 **Problem**: Missing circuit breakers and rate limiters in some services.
 
 **Solution**: Comprehensive resilience patterns implemented across all services.
 
-**Status**: ✅ **COMPLETED**
-- ✅ **engagement-service**: Circuit Breaker for 3 Feign clients + Rate Limiter on comment/review creation
+**Status**: ✅ Completed
+- ✅ engagement-service: Circuit Breaker for 3 Feign clients + Rate Limiter on comment/review creation
 - ✅ **analytics-service**: Circuit Breaker for 4 Feign clients
 - ✅ **api-gateway**: Circuit Breaker for UserServiceClient + Global Rate Limiter
 - ✅ **user-service**: Already had Circuit Breaker (no changes needed)
@@ -993,7 +951,7 @@ spec:
 
 ---
 
-### 9. SAGA Pattern for Distributed Transactions ✅ **COMPLETED (Vote Creation Flow)**
+### 9. SAGA Pattern for Distributed Transactions (Vote Creation Flow)
 
 **Problem**: Vote creation requires atomicity across Engagement Service (vote record) and Gamification Service (Yuan deduction). The previous flow had risks:
 - Vote could be created without Yuan being deducted (if Gamification Service was down)
@@ -1162,11 +1120,11 @@ public void cleanupExpiredReservations() {
 - ✅ **Idempotent**: All events are idempotent (prevents duplicate processing)
 - ✅ **Tested**: Verified with sufficient balance and insufficient balance scenarios
 
-**Status**: ✅ **COMPLETED** - Vote Creation Flow with SAGA pattern is fully implemented and tested.
+**Status**: ✅ Completed - Vote Creation Flow with SAGA pattern is fully implemented and tested.
 
 ---
 
-### 10. Gateway-Level JWT Authentication ✅ **COMPLETED**
+### 10. Gateway-Level JWT Authentication
 
 **Problem**: Currently, each microservice validates JWT tokens independently, causing:
 - Redundant validation across services
@@ -1398,7 +1356,7 @@ spring:
 
 ---
 
-### 11. Inactive User Token Validation (Security Issue) ✅ **RESOLVED**
+### 11. Inactive User Token Validation (Security Issue)
 
 **Problem**: Currently, when a user becomes inactive/suspended/banned after a token is created, the token can still be used in some services because those services check status from the JWT token (old status) instead of from the database.
 
@@ -1675,126 +1633,6 @@ yushan-microservices-user-service/
 
 ---
 
-## 🚀 Migration Strategy
-
-### Repository Strategy
-
-**Approach**: Phase 3 is developed in separate repositories cloned from Phase 2 original repositories. Each Phase 3 repository maintains its own git history and can be developed independently.
-
-**Repository Structure**:
-```
-Phase 2 (Original - NUS ISS team):
-├── yushan-user-service (main branch - production)
-├── yushan-content-service (main branch - production)
-├── yushan-engagement-service (main branch - production)
-├── yushan-gamification-service (main branch - production)
-├── yushan-analytics-service (main branch - production)
-├── yushan-api-gateway (main branch - production)
-├── yushan-config-server (main branch - production)
-└── yushan-platform-service-registry (main branch - production)
-
-Phase 3 (Development - phutruonnttn):
-├── yushan-microservices-user-service (cloned from Phase 2)
-│   ├── main (Phase 3 development)
-│   └── feature/* branches
-├── yushan-microservices-content-service (cloned from Phase 2)
-├── yushan-microservices-engagement-service (cloned from Phase 2)
-├── yushan-microservices-gamification-service (cloned from Phase 2)
-├── yushan-microservices-analytics-service (cloned from Phase 2)
-├── yushan-microservices-api-gateway (cloned from Phase 2)
-├── yushan-microservices-config-server (cloned from Phase 2) - Config Server (API layer)
-├── yushan-microservices-config-data (new) - Config Repository (Git storage for all configs)
-└── yushan-microservices-service-registry (cloned from Phase 2)
-```
-
-**Workflow**:
-```bash
-# Phase 3 repositories are cloned from Phase 2
-# Each Phase 3 repository is developed independently
-
-# Example: Working on user-service Phase 3
-cd yushan-microservices-user-service
-git checkout main
-
-# Create feature branch for Phase 3 improvements
-git checkout -b feature/rich-domain-model
-# ... implement feature ...
-git commit -m "feat: Implement Rich Domain Model"
-git push origin feature/rich-domain-model
-
-# Merge to main when ready
-git checkout main
-git merge feature/rich-domain-model
-git push origin main
-```
-
-**Benefits**:
-- ✅ Independent development - Phase 3 doesn't affect Phase 2 production
-- ✅ Clear separation between Phase 2 (stable) and Phase 3 (development)
-- ✅ Can reference Phase 2 codebase when needed
-- ✅ Phase 2 remains stable and production-ready
-- ✅ Phase 3 can experiment with breaking changes
-
-### Step 1: Clone Phase 2 Repositories
-```bash
-# Clone Phase 2 repositories to create Phase 3 development repos
-# (Already done - repositories are at phutruonnttn/yushan-microservices-*)
-
-# Example structure:
-# Phase 2: maugus0/yushan-user-service
-# Phase 3: phutruonnttn/yushan-microservices-user-service (cloned)
-```
-
-### Step 2: Implement Domain-Driven Design (Feature Branch)
-1. Convert Anemic Domain Models to Rich Domain Models
-2. Implement Repository Pattern
-3. Define Aggregate Boundaries
-4. Implement Domain Events
-
-### Step 3: Event-Driven Improvements (Feature Branch)
-1. Create cache tables for cross-service data
-2. Implement event listeners for cache updates
-3. Add bootstrap mechanism for existing data
-4. Implement idempotent event processing
-
-### Step 4: Resilience & Observability (Feature Branch)
-1. Add circuit breakers to all service calls
-2. Implement rate limiting
-3. Set up distributed tracing
-4. Configure monitoring dashboards
-
-### Step 5: Kubernetes Migration (Feature Branch)
-1. Create Kubernetes manifests
-2. Replace Eureka with Kubernetes Service Discovery
-3. Configure auto-scaling
-4. Set up service mesh (optional)
-
-### Step 6: SAGA Pattern (Feature Branch)
-1. Identify distributed transactions
-2. Implement SAGA orchestrator or choreography
-3. Add compensation logic
-4. Test failure scenarios
-
-### Step 7: AWS Deployment (Feature Branch)
-1. Set up AWS EKS cluster
-2. Migrate databases to RDS
-3. Configure ElastiCache
-4. Set up MSK for Kafka
-5. Deploy services to EKS
-
-**Production Deployment**: After all Phase 3 features are implemented and tested in the Phase 3 repositories, they can be deployed to AWS EKS for production.
-
-```bash
-# Phase 3 repositories are ready for production deployment
-# Each service is deployed independently from its Phase 3 repository
-
-# Tag Phase 3 release
-git tag -a v3.0.0 -m "Phase 3: Kubernetes & AWS Deployment"
-git push origin v3.0.0
-```
-
----
-
 ## 📊 Comparison: Phase 2 vs Phase 3
 
 | Aspect | Phase 2 | Phase 3 |
@@ -1813,146 +1651,61 @@ git push origin v3.0.0
 | **Orchestration** | Docker Compose | Kubernetes |
 | **Cloud** | Digital Ocean | AWS |
 
-## 🔄 Bugfix Strategy
-
-Since Phase 2 and Phase 3 are in separate repositories, bugfixes need to be applied independently:
-
-**Applying Bugfixes**:
-
-**Option 1: Fix in Phase 2 (if bug exists in production)**
-```bash
-# Fix in Phase 2 original repository
-cd yushan-user-service  # Phase 2 repo (maugus0)
-git checkout main
-git checkout -b fix/critical-bug
-# ... fix bug ...
-git commit -m "Fix: Critical bug in user service"
-git push origin fix/critical-bug
-# Create PR to Phase 2 main branch
-```
-
-**Option 2: Fix in Phase 3 (if bug discovered during Phase 3 development)**
-```bash
-# Fix in Phase 3 repository
-cd yushan-microservices-user-service  # Phase 3 repo (phutruonnttn)
-git checkout main
-git checkout -b fix/critical-bug
-# ... fix bug ...
-git commit -m "Fix: Critical bug in user service"
-git push origin fix/critical-bug
-# Merge to Phase 3 main branch
-```
-
-**Option 3: Backport from Phase 3 to Phase 2 (if applicable)**
-```bash
-# If bugfix in Phase 3 is also needed in Phase 2
-# Manually apply the same fix to Phase 2 repository
-# Or cherry-pick if the change is compatible
-cd yushan-user-service  # Phase 2 repo
-git checkout main
-# Manually apply the fix or cherry-pick if compatible
-```
-
-**Considerations**:
-- ⚠️ Phase 2 and Phase 3 are separate repositories - no automatic sync
-- ⚠️ Bugfixes need to be applied manually to both if needed
-- ✅ Phase 2 production remains stable and independent
-- ✅ Phase 3 can experiment without affecting Phase 2
-- ✅ Can reference Phase 2 codebase when needed
-
-## 🚢 Deployment Strategy
-
-### Phase 2 Deployment (Current Production)
-- **Repository**: Original repositories (maugus0/yushan-*)
-- **Branch**: `main`
-- **Environment**: Digital Ocean
-- **Deployment**: Uses `main` branch from Phase 2 repositories for production
-- **Status**: ✅ Stable, continue using until Phase 3 is ready
-
-### Phase 3 Deployment (Future Production)
-- **Repository**: Development repositories (phutruonnttn/yushan-microservices-*)
-- **Branch**: `main` (Phase 3 development)
-- **Environment**: AWS EKS
-- **Deployment**: 
-  - Development/Staging: Deploy from Phase 3 repositories `main` branch
-  - Production: Deploy from Phase 3 repositories `main` branch when ready
-
-### Parallel Deployment
-Phase 2 and Phase 3 can run simultaneously as they are in separate repositories:
-
-```bash
-# Phase 2 deployment (Digital Ocean)
-cd yushan-user-service  # Phase 2 repo (maugus0)
-git checkout main
-# Deploy to Digital Ocean from Phase 2 repository
-
-# Phase 3 deployment (AWS EKS)
-cd yushan-microservices-user-service  # Phase 3 repo (phutruonnttn)
-git checkout main
-# Deploy to AWS EKS from Phase 3 repository
-```
-
-**Note**: 
-- Phase 2 and Phase 3 are completely independent deployments
-- Phase 2 continues running on Digital Ocean (stable production)
-- Phase 3 will run on AWS EKS (new production when ready)
-- Both can coexist during migration period
-
 ---
 
 ## ✅ Implementation Checklist
 
 ### Domain-Driven Design
-- [x] Convert Anemic Domain Models to Rich Domain Models
-  - [x] user-service: User entity with business logic methods (changeStatus, upgradeToAuthor, promoteToAdmin, updateLastLogin, updateLastActive, etc.)
-  - [x] content-service: Novel, Chapter, Category entities with business logic methods (changeStatus, publish, archive, updateContent, etc.)
-  - [x] engagement-service: Comment, Review, Report, Vote entities with business logic methods (updateContent, incrementLikeCount, resolve, dismiss, etc.)
-  - [x] gamification-service: (Skipped - mainly transaction records, minimal business logic needed)
-  - [x] analytics-service: (Skipped - mainly tracking records, minimal business logic needed)
-- [x] Implement Repository Pattern for all aggregates ✅ **COMPLETED**
-  - [x] user-service: UserRepository interface and MyBatisUserRepository implementation
+- ✅ Convert Anemic Domain Models to Rich Domain Models
+  - ✅ user-service: User entity with business logic methods (changeStatus, upgradeToAuthor, promoteToAdmin, updateLastLogin, updateLastActive, etc.)
+  - ✅ content-service: Novel, Chapter, Category entities with business logic methods (changeStatus, publish, archive, updateContent, etc.)
+  - ✅ engagement-service: Comment, Review, Report, Vote entities with business logic methods (updateContent, incrementLikeCount, resolve, dismiss, etc.)
+  - ✅ gamification-service: (Skipped - mainly transaction records, minimal business logic needed)
+  - ✅ analytics-service: (Skipped - mainly tracking records, minimal business logic needed)
+- ✅ Implement Repository Pattern for all aggregates
+  - ✅ user-service: UserRepository interface and MyBatisUserRepository implementation
     - All controllers and security components migrated from UserMapper to UserRepository
     - All tests updated and passing (341 tests: 309 unit + 32 integration)
-  - [x] content-service: NovelRepository, ChapterRepository, CategoryRepository with MyBatis implementations + Elasticsearch repositories
+  - ✅ content-service: NovelRepository, ChapterRepository, CategoryRepository with MyBatis implementations + Elasticsearch repositories
     - All services (NovelService, ChapterService, CategoryService) use Repository interfaces
-  - [x] engagement-service: CommentRepository, ReviewRepository, VoteRepository, ReportRepository with MyBatis implementations
+  - ✅ engagement-service: CommentRepository, ReviewRepository, VoteRepository, ReportRepository with MyBatis implementations
     - All services (CommentService, ReviewService, VoteService, ReportService) use Repository interfaces
-  - [x] gamification-service: UserProgressRepository with MyBatis implementation
+  - ✅ gamification-service: UserProgressRepository with MyBatis implementation
     - GamificationService uses UserProgressRepository
-  - [x] analytics-service: AnalyticsRepository, HistoryRepository with MyBatis implementations
+  - ✅ analytics-service: AnalyticsRepository, HistoryRepository with MyBatis implementations
     - All services (AnalyticsService, HistoryService) use Repository interfaces
-- [x] Define clear aggregate boundaries ✅ **COMPLETED**
-  - [x] content-service: Novel and Chapter are separate aggregates with clear boundaries
-  - [x] user-service: Acceptable as-is (Library and NovelLibrary are child entities of User aggregate)
-  - [x] gamification-service: Acceptable as-is (UserProgress is well-defined aggregate root)
-  - [x] engagement-service: Acceptable as-is (Comment, Review, Vote aggregates are well-separated)
-- [x] Implement Domain Events (internal) ✅ **COMPLETED (content-service only)**
-  - [x] content-service: `ChapterStatisticsChangedEvent` for Novel statistics updates
-  - [x] content-service: `ChapterDomainEventPublisher` and `ChapterDomainEventListener` for event handling
-  - [x] content-service: All chapter operations (create, update, delete, publish) publish Domain Events
-  - [x] user-service: Not needed (no cross-aggregate issues)
-  - [x] gamification-service: Not needed (no cross-aggregate issues)
-  - [x] engagement-service: Not needed (no cross-aggregate issues)
-- [x] Separate Domain Events from Integration Events ✅ **COMPLETED (content-service)**
-  - [x] content-service: Domain Events (internal, same transaction) vs Integration Events (Kafka, cross-service)
-  - [x] content-service: `ChapterStatisticsChangedEvent` is Domain Event (Spring ApplicationEventPublisher)
-  - [x] content-service: Kafka events remain as Integration Events for cross-service communication
-  - [x] Other services: No changes needed (no cross-aggregate issues requiring Domain Events)
-- [x] **Kafka Events Transaction Boundary Fix** ✅ **COMPLETED**
-  - [x] content-service: All Kafka events publish AFTER transaction commit
-  - [x] engagement-service: All Kafka events publish AFTER transaction commit
-  - [x] user-service: All Kafka events publish AFTER transaction commit
-  - [x] gamification-service: LevelUpEvent publishes AFTER transaction commit
-  - [x] analytics-service: No changes needed (consumer only)
-  - [x] Created `TransactionAwareKafkaPublisher` helper service for all services
-  - [x] Used `TransactionSynchronizationManager` to ensure events publish after commit
-  - [x] Ensures consistency: events only published when transaction commits successfully
+- ✅ Define clear aggregate boundaries
+  - ✅ content-service: Novel and Chapter are separate aggregates with clear boundaries
+  - ✅ user-service: Acceptable as-is (Library and NovelLibrary are child entities of User aggregate)
+  - ✅ gamification-service: Acceptable as-is (UserProgress is well-defined aggregate root)
+  - ✅ engagement-service: Acceptable as-is (Comment, Review, Vote aggregates are well-separated)
+- ✅ Implement Domain Events (internal) (content-service only)
+  - ✅ content-service: `ChapterStatisticsChangedEvent` for Novel statistics updates
+  - ✅ content-service: `ChapterDomainEventPublisher` and `ChapterDomainEventListener` for event handling
+  - ✅ content-service: All chapter operations (create, update, delete, publish) publish Domain Events
+  - ✅ user-service: Not needed (no cross-aggregate issues)
+  - ✅ gamification-service: Not needed (no cross-aggregate issues)
+  - ✅ engagement-service: Not needed (no cross-aggregate issues)
+- ✅ Separate Domain Events from Integration Events (content-service)
+  - ✅ content-service: Domain Events (internal, same transaction) vs Integration Events (Kafka, cross-service)
+  - ✅ content-service: `ChapterStatisticsChangedEvent` is Domain Event (Spring ApplicationEventPublisher)
+  - ✅ content-service: Kafka events remain as Integration Events for cross-service communication
+  - ✅ Other services: No changes needed (no cross-aggregate issues requiring Domain Events)
+- ✅ Kafka Events Transaction Boundary Fix
+  - ✅ content-service: All Kafka events publish AFTER transaction commit
+  - ✅ engagement-service: All Kafka events publish AFTER transaction commit
+  - ✅ user-service: All Kafka events publish AFTER transaction commit
+  - ✅ gamification-service: LevelUpEvent publishes AFTER transaction commit
+  - ✅ analytics-service: No changes needed (consumer only)
+  - ✅ Created `TransactionAwareKafkaPublisher` helper service for all services
+  - ✅ Used `TransactionSynchronizationManager` to ensure events publish after commit
+  - ✅ Ensures consistency: events only published when transaction commits successfully
 
 ### Event-Driven Architecture
-- [x] ~~Create cache tables for cross-service data~~ (Not needed - write operations optimized via Kafka)
-- [x] ~~Implement event listeners for cache updates~~ (Not needed)
-- [x] ~~Add bootstrap mechanism for existing data~~ (Not needed)
-- [x] **Implement hybrid idempotent event processing** ✅ **COMPLETED**
+- ✅ ~~Create cache tables for cross-service data~~ (Not needed - write operations optimized via Kafka)
+- ✅ ~~Implement event listeners for cache updates~~ (Not needed)
+- ✅ ~~Add bootstrap mechanism for existing data~~ (Not needed)
+- ✅ Implement hybrid idempotent event processing
   - Hybrid approach: Redis (fast checks <1ms) + Database table (persistent backup)
   - Created `processed_events` table in gamification-service, content-service, user-service
   - Implemented `IdempotencyService` for dual-layer idempotency checks
@@ -1961,88 +1714,88 @@ git checkout main
     - content-service: EngagementEventListener (novel-rating-events, novel-vote-count-events)
     - user-service: UserActivityListener
   - Ensures idempotency even when Redis is restarted (data persisted in database)
-- [x] **Optimize inter-service communication** ✅ **COMPLETED**
+- ✅ Optimize inter-service communication
   - Migrated `updateNovelRatingAndCount` to Kafka (`novel-rating-events`)
   - Migrated `incrementVoteCount` to Kafka (`novel-vote-count-events`)
   - Response time improved from 600-700ms to <100ms
 
 ### Resilience & Observability
-- [x] **Add circuit breakers to all service calls** ✅ **COMPLETED**
-  - [x] engagement-service: Circuit Breaker for 3 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient)
-  - [x] analytics-service: Circuit Breaker for 4 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient, EngagementServiceClient)
-  - [x] api-gateway: Circuit Breaker for UserServiceClient (blocked users sync)
-  - [x] user-service: Already had Circuit Breaker for ContentServiceClient
-  - [x] All Feign client methods have fallback methods/classes for graceful degradation
-  - [x] Circuit Breakers enabled via `spring.cloud.openfeign.circuitbreaker.enabled=true` (no `@CircuitBreaker` annotations on Feign methods)
-  - [x] Resilience4j configuration added to all service config files
-  - [x] Circuit Breaker state monitoring via Actuator endpoints
-  - [x] Conflict resolution between bootstrap retry and Circuit Breaker fallback in API Gateway
-- [x] **Implement rate limiting on critical endpoints** ✅ **COMPLETED**
-  - [x] engagement-service: Rate limiter on comment creation (10/60s) and review creation (5/60s) via `RateLimiterInterceptor` (HandlerInterceptor pattern)
-  - [x] api-gateway: Global rate limiter (100 requests/60s) via `RateLimiterGatewayFilter` (GlobalFilter)
-  - [x] Resilience4j Rate Limiter configuration added
-  - [x] All Rate Limiters tested and verified working correctly (HTTP 429 when limits exceeded)
-- [ ] Set up distributed tracing (Jaeger/Zipkin)
-- [ ] Configure Prometheus metrics
-- [ ] Set up Grafana dashboards
+- ✅ Add circuit breakers to all service calls
+  - ✅ engagement-service: Circuit Breaker for 3 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient)
+  - ✅ analytics-service: Circuit Breaker for 4 Feign clients (ContentServiceClient, UserServiceClient, GamificationServiceClient, EngagementServiceClient)
+  - ✅ api-gateway: Circuit Breaker for UserServiceClient (blocked users sync)
+  - ✅ user-service: Already had Circuit Breaker for ContentServiceClient
+  - ✅ All Feign client methods have fallback methods/classes for graceful degradation
+  - ✅ Circuit Breakers enabled via `spring.cloud.openfeign.circuitbreaker.enabled=true` (no `@CircuitBreaker` annotations on Feign methods)
+  - ✅ Resilience4j configuration added to all service config files
+  - ✅ Circuit Breaker state monitoring via Actuator endpoints
+  - ✅ Conflict resolution between bootstrap retry and Circuit Breaker fallback in API Gateway
+- ✅ Implement rate limiting on critical endpoints
+  - ✅ engagement-service: Rate limiter on comment creation (10/60s) and review creation (5/60s) via `RateLimiterInterceptor` (HandlerInterceptor pattern)
+  - ✅ api-gateway: Global rate limiter (100 requests/60s) via `RateLimiterGatewayFilter` (GlobalFilter)
+  - ✅ Resilience4j Rate Limiter configuration added
+  - ✅ All Rate Limiters tested and verified working correctly (HTTP 429 when limits exceeded)
+- ⬜ Set up distributed tracing (Jaeger/Zipkin)
+- ⬜ Configure Prometheus metrics
+- ⬜ Set up Grafana dashboards
 
 ### Security Improvements
-- [x] Implement Gateway-Level JWT Authentication ✅ **COMPLETED**
-  - [x] Add JWT validation filter to API Gateway (`JwtAuthenticationGatewayFilter`)
-  - [x] Implement HMAC signature generation in Gateway (`HmacUtil`)
-  - [x] Add HMAC signature verification in all services (`GatewayAuthenticationFilter`)
-  - [x] Configure shared secret (`GATEWAY_HMAC_SECRET`) across Gateway and all services
-  - [x] Implement timestamp validation (5-minute tolerance) to prevent replay attacks
-  - [x] Implement constant-time comparison to prevent timing attacks
-  - [x] Simplify microservice authentication (trust gateway-validated requests with signature verification)
-  - [x] Configure public endpoints whitelist (comprehensive list in `JwtAuthenticationGatewayFilter`)
-  - [x] Add fallback authentication for service-to-service calls (JWT validation for backward compatibility)
-  - [x] Update Feign clients to forward HMAC signature headers in inter-service calls
-- [ ] Implement gateway high availability
-- [x] **Fix inactive user token validation issue** ✅ **COMPLETED (Option B)**
-  - [x] Option B: Redis Block List (only inactive users) - **IMPLEMENTED**
-    - [x] Created Redis blocklist in Gateway (Redis Set: `user:blocklist`)
-    - [x] Created internal endpoint in User Service (`/api/v1/internal/blocked-users`)
-    - [x] Created `UserStatusChangedEvent` DTO and publish from AdminService
-    - [x] Created `UserBlocklistBootstrapService` with exponential backoff retry (30s → 480s)
-    - [x] Created `UserStatusEventListener` to update blocklist from Kafka events
-    - [x] Updated `JwtAuthenticationGatewayFilter` to check Redis blocklist before forwarding
-    - [x] Configured Redis and Kafka in Gateway
-    - [x] Graceful degradation: Gateway works even if blocklist not synced
+- ✅ Implement Gateway-Level JWT Authentication
+  - ✅ Add JWT validation filter to API Gateway (`JwtAuthenticationGatewayFilter`)
+  - ✅ Implement HMAC signature generation in Gateway (`HmacUtil`)
+  - ✅ Add HMAC signature verification in all services (`GatewayAuthenticationFilter`)
+  - ✅ Configure shared secret (`GATEWAY_HMAC_SECRET`) across Gateway and all services
+  - ✅ Implement timestamp validation (5-minute tolerance) to prevent replay attacks
+  - ✅ Implement constant-time comparison to prevent timing attacks
+  - ✅ Simplify microservice authentication (trust gateway-validated requests with signature verification)
+  - ✅ Configure public endpoints whitelist (comprehensive list in `JwtAuthenticationGatewayFilter`)
+  - ✅ Add fallback authentication for service-to-service calls (JWT validation for backward compatibility)
+  - ✅ Update Feign clients to forward HMAC signature headers in inter-service calls
+- ⬜ Implement gateway high availability
+- ✅ Fix inactive user token validation issue (Option B)
+  - ✅ Option B: Redis Block List (only inactive users) - implemented
+    - ✅ Created Redis blocklist in Gateway (Redis Set: `user:blocklist`)
+    - ✅ Created internal endpoint in User Service (`/api/v1/internal/blocked-users`)
+    - ✅ Created `UserStatusChangedEvent` DTO and publish from AdminService
+    - ✅ Created `UserBlocklistBootstrapService` with exponential backoff retry (30s → 480s)
+    - ✅ Created `UserStatusEventListener` to update blocklist from Kafka events
+    - ✅ Updated `JwtAuthenticationGatewayFilter` to check Redis blocklist before forwarding
+    - ✅ Configured Redis and Kafka in Gateway
+    - ✅ Graceful degradation: Gateway works even if blocklist not synced
 
 ### Kubernetes & Cloud
-- [ ] Create Kubernetes manifests for all services
-- [ ] Replace Eureka with Kubernetes Service Discovery
-- [ ] Configure auto-scaling (HPA)
-- [ ] Set up service mesh (Istio/Linkerd) - optional
-- [ ] Migrate to AWS EKS
-- [ ] Configure AWS RDS
-- [ ] Set up AWS ElastiCache
-- [ ] Configure AWS MSK for Kafka
-- [ ] Set up AWS S3 for file storage
+- ⬜ Create Kubernetes manifests for all services
+- ⬜ Replace Eureka with Kubernetes Service Discovery
+- ⬜ Configure auto-scaling (HPA)
+- ⬜ Set up service mesh (Istio/Linkerd) - optional
+- ⬜ Migrate to AWS EKS
+- ⬜ Configure AWS RDS
+- ⬜ Set up AWS ElastiCache
+- ⬜ Configure AWS MSK for Kafka
+- ⬜ Set up AWS S3 for file storage
 
 ### SAGA Pattern
-- [x] **Identify distributed transactions** ✅ **COMPLETED**
-  - [x] Vote Creation Flow identified as requiring distributed transaction management
-- [x] **Design SAGA flows (choreography)** ✅ **COMPLETED**
-  - [x] Choreography pattern chosen for Vote Creation Flow
-  - [x] Event-driven flow with Kafka topics
-  - [x] Multi-step transaction: Reserve Yuan → Create Vote → Confirm Yuan
-- [x] **Implement SAGA orchestrator/participants** ✅ **COMPLETED**
-  - [x] Yuan Reservation System implemented (gamification-service)
-  - [x] VoteSagaListener in gamification-service (reserve, confirm, compensate)
-  - [x] VoteSagaListener in engagement-service (create vote)
-  - [x] Balance check at reserve time (fail fast pattern)
-  - [x] Feature flag for gradual rollout (`saga.vote-creation.enabled`)
-- [x] **Add compensation logic** ✅ **COMPLETED**
-  - [x] Automatic Yuan release on SAGA failures
-  - [x] Reservation status management (RESERVED → CONFIRMED/RELEASED)
-  - [x] Scheduled cleanup job for expired reservations
-- [x] **Test failure and recovery scenarios** ✅ **COMPLETED**
-  - [x] Tested with sufficient balance (vote created successfully)
-  - [x] Tested with insufficient balance (returns 400, no vote created)
-  - [x] Verified compensation logic (Yuan released on failures)
-  - [x] API contract fixed (returns 400 when balance = 0)
+- ✅ Identify distributed transactions
+  - ✅ Vote Creation Flow identified as requiring distributed transaction management
+- ✅ Design SAGA flows (choreography)
+  - ✅ Choreography pattern chosen for Vote Creation Flow
+  - ✅ Event-driven flow with Kafka topics
+  - ✅ Multi-step transaction: Reserve Yuan → Create Vote → Confirm Yuan
+- ✅ Implement SAGA orchestrator/participants
+  - ✅ Yuan Reservation System implemented (gamification-service)
+  - ✅ VoteSagaListener in gamification-service (reserve, confirm, compensate)
+  - ✅ VoteSagaListener in engagement-service (create vote)
+  - ✅ Balance check at reserve time (fail fast pattern)
+  - ✅ Feature flag for gradual rollout (`saga.vote-creation.enabled`)
+- ✅ Add compensation logic
+  - ✅ Automatic Yuan release on SAGA failures
+  - ✅ Reservation status management (RESERVED → CONFIRMED/RELEASED)
+  - ✅ Scheduled cleanup job for expired reservations
+- ✅ Test failure and recovery scenarios
+  - ✅ Tested with sufficient balance (vote created successfully)
+  - ✅ Tested with insufficient balance (returns 400, no vote created)
+  - ✅ Verified compensation logic (Yuan released on failures)
+  - ✅ API contract fixed (returns 400 when balance = 0)
 
 ---
 
