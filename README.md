@@ -748,6 +748,7 @@ This project is part of the Yushan Platform ecosystem.
 - [Admin Dashboard](https://github.com/phutruonnttn/yushan-microservices-admin-dashboard) (Cloned from Phase 1 monolithic admin dashboard, deployed on GitHub Pages)
 
 ### Phase 3 (Kubernetes & AWS) - Development Repositories
+- [AWS Deployment](https://github.com/phutruonnttn/yushan-AWS-deployment) - **NEW**: Terraform infrastructure for AWS deployment (EKS, RDS, ElastiCache, Kafka, ALB)
 - [Service Registry](https://github.com/phutruonnttn/yushan-microservices-service-registry) (Phase 3 development)
 - [Config Server](https://github.com/phutruonnttn/yushan-microservices-config-server) (Phase 3 development)
 - [Config Repository](https://github.com/phutruonnttn/yushan-microservices-config-data) - Git repository storing all configuration files
