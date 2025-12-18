@@ -216,9 +216,11 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 ### Phase 3: Kubernetes & AWS Deployment 🔄 **In Progress**
 
-**Status**: 🔄 In Progress (65% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) + Circuit Breakers & Rate Limiters (comprehensive coverage) + SAGA Pattern for distributed transactions (Vote Creation Flow) completed
+**Status**: 🔄 In Progress (65% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) + Circuit Breakers & Rate Limiters (comprehensive coverage) + SAGA Pattern for distributed transactions (Vote Creation Flow) completed | **AWS Infrastructure**: VPC and Security Groups completed, EKS setup in progress
 
 **Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment. **Phase 3 is developed in separate repositories cloned from Phase 2 original repositories** (see [Phase 3 README](./docs/phase3-kubernetes/README.md) for details).
+
+**AWS Deployment Repository**: [yushan-AWS-deployment](https://github.com/phutruonnttn/yushan-AWS-deployment) - Terraform infrastructure for AWS deployment with production-standard architecture (Database-per-Service pattern, Multi-AZ, EKS, RDS, ElastiCache, Kafka, ALB).
 
 **Completed Features**:
 - ✅ **Rich Domain Model refactoring** (user-service, content-service, engagement-service)
@@ -335,7 +337,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 - [x] ~~Saga pattern for distributed transactions~~ ✅ **COMPLETED (Vote Creation Flow)**
 - [ ] Service mesh (Istio/Linkerd)
 - [ ] Advanced monitoring and observability
-- [ ] AWS deployment (EKS, RDS, ElastiCache, etc.)
+- [ ] AWS deployment (EKS, RDS, ElastiCache, etc.) - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
 - [x] ~~Event-driven cache tables for eventual consistency~~ (Not needed - see explanation in Phase 3 docs)
 - [ ] Performance optimizations
 - [ ] Enhanced security
@@ -566,7 +568,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
    - Review: [Design Documents](https://github.com/phutruonnttn/Yushan_Web_Novel_Deisgn_Documents)
    - Setup: [Deployment Guide](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform)
 
-3. **Continue Phase 3** (Kubernetes):
+3. **Continue Phase 3** (Kubernetes & AWS):
    - ✅ Rich Domain Model refactoring completed (user-service, content-service, engagement-service)
    - ✅ Inter-service communication optimization completed (write operations migrated to Kafka events)
    - ✅ Hybrid idempotency implementation completed (Redis + Database table for all event consumers)
@@ -581,8 +583,15 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
     - API Gateway: Circuit Breaker for UserServiceClient + Global Rate Limiter (100 requests/60s) via `RateLimiterGatewayFilter`
     - All implementations tested and verified working correctly
   - ✅ SAGA Pattern completed (Vote Creation Flow: Choreography pattern with Yuan Reservation System, balance check at reserve time, automatic compensation, tested and verified)
+  - ⏳ **AWS Infrastructure Setup** - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
+    - ✅ VPC Infrastructure (Subtask 3)
+    - ✅ Security Groups (Subtask 4)
+    - ⏳ EKS Cluster (Subtask 5) - Next
+    - ⏳ RDS, ElastiCache, Kafka, S3, ALB, ECR (Subtask 6-11)
+    - ⏳ K8s Manifests and Testing (Subtask 12-14)
   - Review: [Phase 3 Architecture](./docs/phase3-kubernetes/README.md)
-  - Next steps: Kubernetes migration, distributed tracing
+  - Review: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment) - Infrastructure setup progress
+  - Next steps: Complete AWS infrastructure, Kubernetes migration, distributed tracing
 
 ### For Architects
 
@@ -593,9 +602,10 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 
 ### For DevOps Engineers
 
-1. **Deployment**: [Digital Ocean Terraform Deployment](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform)
-2. **Monitoring**: [Monitoring Stack Setup](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform/tree/main/yushan-monitoring)
-3. **CI/CD**: [DevOps Lifecycle](https://github.com/phutruonnttn/Yushan_Web_Novel_Deisgn_Documents/blob/main/DEVOPS_DEVELOPMENT_LIFECYCLE.md)
+1. **AWS Deployment (Phase 3)**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment) - Terraform infrastructure for AWS (EKS, RDS, ElastiCache, Kafka, ALB)
+2. **Digital Ocean Deployment (Phase 2)**: [Digital Ocean Terraform Deployment](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform)
+3. **Monitoring**: [Monitoring Stack Setup](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform/tree/main/yushan-monitoring)
+4. **CI/CD**: [DevOps Lifecycle](https://github.com/phutruonnttn/Yushan_Web_Novel_Deisgn_Documents/blob/main/DEVOPS_DEVELOPMENT_LIFECYCLE.md)
 
 ## 📊 Project Status Summary
 
@@ -603,7 +613,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 |-------|--------|------------|------------|-------|
 | **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
 | **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
-| **Phase 3** | 🔄 In Progress | 65% | AWS (Planned) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List), Circuit Breakers & Rate Limiters (comprehensive coverage), SAGA Pattern for distributed transactions (Vote Creation Flow). **In Progress**: Kubernetes, distributed tracing |
+| **Phase 3** | 🔄 In Progress | 65% | AWS (In Progress) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List), Circuit Breakers & Rate Limiters (comprehensive coverage), SAGA Pattern for distributed transactions (Vote Creation Flow). **In Progress**: AWS Infrastructure Setup ([AWS Deployment Repo](https://github.com/phutruonnttn/yushan-AWS-deployment) - VPC, Security Groups completed), Kubernetes, distributed tracing |
 
 ## 🔧 Technology Evolution
 
@@ -625,13 +635,16 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 - **Caching**: Basic Redis → Distributed Redis with sorted sets for rankings
 - **File Storage**: Local → Digital Ocean Spaces / S3 compatible storage
 
-### Phase 2 → Phase 3 (Planned)
-- **Orchestration**: Docker Compose → Kubernetes
-- **Deployment**: Digital Ocean → AWS
-- **Tracing**: None → Distributed tracing (Jaeger/Zipkin)
-- **Transactions**: Local → Saga pattern
-- **Service Mesh**: None → Istio/Linkerd
-- **Monitoring**: Prometheus/Grafana → Enhanced observability
+### Phase 2 → Phase 3 (In Progress)
+- **Orchestration**: Docker Compose → Kubernetes (AWS EKS)
+- **Deployment**: Digital Ocean → AWS ([AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment))
+- **Infrastructure**: Terraform for Digital Ocean → Terraform for AWS (EKS, RDS, ElastiCache, ALB)
+- **Service Discovery**: Eureka → Kubernetes Native Service Discovery
+- **Configuration**: Config Server → AWS AppConfig/Parameter Store/Secrets Manager (planned)
+- **Tracing**: None → Distributed tracing (Jaeger/Zipkin) (planned)
+- **Transactions**: Local → Saga pattern ✅ **COMPLETED**
+- **Service Mesh**: None → Istio/Linkerd (planned)
+- **Monitoring**: Prometheus/Grafana → Enhanced observability (planned)
 
 ## 📝 Key Documents
 
@@ -650,7 +663,13 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
   - [Physical Architecture](https://github.com/phutruonnttn/Yushan_Web_Novel_Deisgn_Documents/blob/main/PHYSICAL_ARCHITECTURE_DESIGN.md)
 
 ### Deployment & Infrastructure
-- [Digital Ocean Deployment](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform) - Infrastructure as Code:
+- [AWS Deployment (Phase 3)](https://github.com/phutruonnttn/yushan-AWS-deployment) - **NEW**: AWS Infrastructure as Code:
+  - Terraform modules for AWS deployment (EKS, RDS, ElastiCache, Kafka, ALB)
+  - Production-standard architecture with Database-per-Service pattern
+  - VPC infrastructure, Security Groups, and networking setup
+  - Cost-optimized for learning (12 hours/day runtime)
+  - Status: VPC and Security Groups completed, EKS setup in progress
+- [Digital Ocean Deployment (Phase 2)](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform) - Infrastructure as Code:
   - Terraform modules for service deployment
   - Load balancer configuration
   - Database and cache provisioning
@@ -691,10 +710,10 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 - ⚙️ **Centralized Configuration**: Spring Cloud Config Server for environment management
 
 ### Phase 3 Planned Enhancements
-- 🔍 Distributed tracing
-- 🔄 Saga pattern for transactions
-- 🌐 Service mesh
-- ☁️ Cloud-native AWS services
+- 🔍 Distributed tracing (Jaeger/Zipkin)
+- 🔄 Saga pattern for transactions ✅ **COMPLETED (Vote Creation Flow)**
+- 🌐 Service mesh (Istio/Linkerd)
+- ☁️ Cloud-native AWS services - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
 - 📊 Enhanced observability
 
 ## 🤝 Contributing
@@ -740,7 +759,8 @@ This project is part of the Yushan Platform ecosystem.
 - [Analytics Service](https://github.com/phutruonnttn/yushan-microservices-analytics-service) (Phase 3 development)
 
 ### Infrastructure & Documentation
-- [Terraform Deployment](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform)
+- [AWS Deployment (Phase 3)](https://github.com/phutruonnttn/yushan-AWS-deployment) - **NEW**: Terraform infrastructure for AWS deployment (EKS, RDS, ElastiCache, Kafka, ALB)
+- [Digital Ocean Deployment (Phase 2)](https://github.com/phutruonnttn/Digital_Ocean_Deployment_with_Terraform) - Terraform infrastructure for Digital Ocean deployment
 - [Design Documents](https://github.com/phutruonnttn/Yushan_Web_Novel_Deisgn_Documents)
 
 ---

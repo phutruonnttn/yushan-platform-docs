@@ -1768,11 +1768,23 @@ yushan-microservices-user-service/
 - ⬜ Replace Eureka with Kubernetes Service Discovery
 - ⬜ Configure auto-scaling (HPA)
 - ⬜ Set up service mesh (Istio/Linkerd) - optional
-- ⬜ Migrate to AWS EKS
-- ⬜ Configure AWS RDS
-- ⬜ Set up AWS ElastiCache
-- ⬜ Configure AWS MSK for Kafka
-- ⬜ Set up AWS S3 for file storage
+- ⬜ Migrate to AWS EKS - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
+  - ✅ VPC Infrastructure (Subtask 3)
+  - ✅ Security Groups (Subtask 4)
+  - ⏳ EKS Cluster (Subtask 5) - Next
+  - ⏳ RDS PostgreSQL (Subtask 6)
+  - ⏳ ElastiCache Redis (Subtask 7)
+  - ⏳ EC2 Kafka Cluster (Subtask 8)
+  - ⏳ S3 Buckets (Subtask 9)
+  - ⏳ Application Load Balancer (Subtask 10)
+  - ⏳ ECR Repositories (Subtask 11)
+  - ⏳ Service Configs Update (Subtask 12)
+  - ⏳ K8s Manifests (Subtask 13)
+  - ⏳ Testing & Validation (Subtask 14)
+- ⬜ Configure AWS RDS - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
+- ⬜ Set up AWS ElastiCache - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
+- ⬜ Configure EC2 Kafka (3 brokers Multi-AZ) - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
+- ⬜ Set up AWS S3 for file storage - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
 
 ### SAGA Pattern
 - ✅ Identify distributed transactions
