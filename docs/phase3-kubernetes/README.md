@@ -4,7 +4,7 @@
 
 ## 📋 Overview
 
-**Status**: 🔄 In Progress (65% Complete) | **Target**: AWS EKS Deployment
+**Status**: 🔄 In Progress (75% Complete) | **Target**: AWS EKS Deployment
 
 **Progress**: 
 - Rich Domain Model refactoring completed for 3 services (user-service, content-service, engagement-service)
@@ -17,6 +17,7 @@
 - Inactive User Token Validation issue resolved (Option B - Redis Block List implemented with real-time updates via Kafka events)
 - Circuit Breakers & Rate Limiters completed (comprehensive coverage: engagement-service, analytics-service, api-gateway)
 - SAGA Pattern for distributed transactions completed (Vote Creation Flow with Choreography pattern, Yuan Reservation System, balance check at reserve time, compensation logic)
+- ✅ **AWS Infrastructure Deployment (Task 1) Complete** - All infrastructure deployed (EKS, RDS, ElastiCache, Kafka, S3, ALB), all 6 microservices deployed and running, Kafka installed and configured (3 brokers with Zookeeper), all APIs functional with Kafka enabled, all Swagger UIs accessible (6/6)
 
 Phase 3 represents a significant evolution from Phase 2, focusing on:
 - **Cloud-Native Architecture**: Kubernetes-native service discovery and orchestration
@@ -28,12 +29,13 @@ Phase 3 represents a significant evolution from Phase 2, focusing on:
 ## 🎯 Planned Features
 
 ### Infrastructure & Deployment
-- ✅ Kubernetes orchestration (AWS EKS)
-- ✅ Kubernetes-native service discovery (replacing Eureka)
-- ✅ Auto-scaling and container orchestration
-- ✅ AWS cloud services integration
-- ✅ Service mesh (Istio/Linkerd)
-- ✅ Distributed tracing (Jaeger/Zipkin)
+- ✅ Kubernetes orchestration (AWS EKS) - **Deployed and Running**
+- ✅ Kubernetes-native service discovery (replacing Eureka) - **Implemented**
+- ✅ Auto-scaling and container orchestration - **EKS Cluster with 2 nodes (t3.small)**
+- ✅ AWS cloud services integration - **Complete (RDS, ElastiCache, S3, ALB, ECR)**
+- ✅ EC2 Kafka Cluster - **3 brokers (t3.small, Multi-AZ) deployed and running**
+- ⬜ Service mesh (Istio/Linkerd)
+- ⬜ Distributed tracing (Jaeger/Zipkin)
 
 ### Architecture Improvements
 - ✅ **Rich Domain Models** (fixing Anemic Domain Model) - **COMPLETED**
@@ -1764,27 +1766,27 @@ yushan-microservices-user-service/
     - ✅ Graceful degradation: Gateway works even if blocklist not synced
 
 ### Kubernetes & Cloud
-- ⬜ Create Kubernetes manifests for all services
-- ⬜ Replace Eureka with Kubernetes Service Discovery
-- ⬜ Configure auto-scaling (HPA)
+- ✅ Create Kubernetes manifests for all services - **Completed (all 6 services)**
+- ✅ Replace Eureka with Kubernetes Service Discovery - **Implemented**
+- ⬜ Configure auto-scaling (HPA) - **Next: Task 2**
 - ⬜ Set up service mesh (Istio/Linkerd) - optional
-- ⬜ Migrate to AWS EKS - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
+- ✅ **Migrate to AWS EKS - Task 1 Complete**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
   - ✅ VPC Infrastructure (Subtask 3)
   - ✅ Security Groups (Subtask 4)
-  - ⏳ EKS Cluster (Subtask 5) - Next
-  - ⏳ RDS PostgreSQL (Subtask 6)
-  - ⏳ ElastiCache Redis (Subtask 7)
-  - ⏳ EC2 Kafka Cluster (Subtask 8)
-  - ⏳ S3 Buckets (Subtask 9)
-  - ⏳ Application Load Balancer (Subtask 10)
-  - ⏳ ECR Repositories (Subtask 11)
-  - ⏳ Service Configs Update (Subtask 12)
-  - ⏳ K8s Manifests (Subtask 13)
-  - ⏳ Testing & Validation (Subtask 14)
-- ⬜ Configure AWS RDS - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
-- ⬜ Set up AWS ElastiCache - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
-- ⬜ Configure EC2 Kafka (3 brokers Multi-AZ) - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
-- ⬜ Set up AWS S3 for file storage - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
+  - ✅ EKS Cluster (Subtask 5) - 2 nodes (t3.small), 4GB total memory
+  - ✅ RDS PostgreSQL (Subtask 6) - 5x instances (Database-per-Service pattern)
+  - ✅ ElastiCache Redis (Subtask 7) - 5x clusters (Database-per-Service pattern)
+  - ✅ EC2 Kafka Cluster (Subtask 8) - 3 brokers (t3.small, Multi-AZ), Zookeeper installed
+  - ✅ S3 Buckets (Subtask 9)
+  - ✅ Application Load Balancer (Subtask 10)
+  - ✅ ECR Repositories (Subtask 11)
+  - ✅ Service Configs Update (Subtask 12)
+  - ✅ K8s Manifests (Subtask 13) - All 6 services deployed
+  - ✅ Testing & Validation (Subtask 14) - All APIs functional, Kafka enabled
+- ✅ Configure AWS RDS - **Complete**: 5x PostgreSQL instances (Database-per-Service)
+- ✅ Set up AWS ElastiCache - **Complete**: 5x Redis clusters (Database-per-Service)
+- ✅ Configure EC2 Kafka (3 brokers Multi-AZ) - **Complete**: Installed, configured, and running
+- ✅ Set up AWS S3 for file storage - **Complete**: Bucket created with CORS and lifecycle policies
 
 ### SAGA Pattern
 - ✅ Identify distributed transactions
@@ -1822,5 +1824,5 @@ yushan-microservices-user-service/
 
 ---
 
-**Last Updated**: January 2025 - SAGA Pattern for distributed transactions completed (Vote Creation Flow). Implemented Choreography SAGA pattern with Yuan Reservation System. Multi-step transaction flow: Reserve Yuan → Create Vote → Confirm Yuan Deduction + Award EXP. Balance check at reserve time (fail fast pattern) ensures API returns 400 when insufficient balance. Automatic compensation logic for rollback on failures. Scheduled cleanup job for expired reservations. Hybrid idempotency for all SAGA events. Feature flag for gradual rollout. Tested and verified with sufficient and insufficient balance scenarios. All components implemented: YuanReservationService, VoteSagaListener (gamification-service and engagement-service), YuanReservation entity and migration, and API contract fix in VoteService.
+**Last Updated**: January 2025 - **AWS Infrastructure Deployment (Task 1) Complete**: All infrastructure deployed (EKS, RDS, ElastiCache, Kafka, S3, ALB), all 6 microservices deployed and running on AWS EKS, Kafka installed and configured (3 brokers with Zookeeper), all APIs functional with Kafka enabled, all Swagger UIs accessible (6/6). Previous completions: SAGA Pattern for distributed transactions (Vote Creation Flow with Choreography pattern, Yuan Reservation System), Repository Pattern (all services), Aggregate Boundaries & Domain Events (content-service), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List), Circuit Breakers & Rate Limiters (comprehensive coverage). **Phase 3 Progress: 75% Complete**. Next: Kubernetes migration (Task 2), Configuration management (Task 3), Distributed tracing (Task 4).
 

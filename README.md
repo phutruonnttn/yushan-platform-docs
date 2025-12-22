@@ -216,7 +216,7 @@ This repository contains comprehensive documentation for the **Yushan Platform**
 
 ### Phase 3: Kubernetes & AWS Deployment 🔄 **In Progress**
 
-**Status**: 🔄 In Progress (65% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) + Circuit Breakers & Rate Limiters (comprehensive coverage) + SAGA Pattern for distributed transactions (Vote Creation Flow) completed | **AWS Infrastructure**: VPC and Security Groups completed, EKS setup in progress
+**Status**: 🔄 In Progress (75% Complete) | **Progress**: Rich Domain Model refactoring + Inter-service communication optimization + Hybrid idempotency implementation + Repository Pattern (all services) + Aggregate Boundaries & Domain Events (content-service) + Kafka Events Transaction Boundary Fix + Gateway-Level JWT Authentication with HMAC Signature + Inactive User Token Validation (Redis Block List) + Circuit Breakers & Rate Limiters (comprehensive coverage) + SAGA Pattern for distributed transactions (Vote Creation Flow) completed | **AWS Infrastructure**: ✅ **Task 1 Complete** - All infrastructure deployed (EKS, RDS, ElastiCache, Kafka, S3, ALB), all 6 microservices deployed and running, Kafka installed and configured, all APIs functional
 
 **Description**: Advanced microservices architecture with Kubernetes orchestration, distributed tracing, Saga pattern, and AWS deployment. **Phase 3 is developed in separate repositories cloned from Phase 2 original repositories** (see [Phase 3 README](./docs/phase3-kubernetes/README.md) for details).
 
@@ -583,12 +583,23 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
     - API Gateway: Circuit Breaker for UserServiceClient + Global Rate Limiter (100 requests/60s) via `RateLimiterGatewayFilter`
     - All implementations tested and verified working correctly
   - ✅ SAGA Pattern completed (Vote Creation Flow: Choreography pattern with Yuan Reservation System, balance check at reserve time, automatic compensation, tested and verified)
-  - ⏳ **AWS Infrastructure Setup** - **In Progress**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
+  - ✅ **AWS Infrastructure Setup** - **Task 1 Complete**: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment)
     - ✅ VPC Infrastructure (Subtask 3)
     - ✅ Security Groups (Subtask 4)
-    - ⏳ EKS Cluster (Subtask 5) - Next
-    - ⏳ RDS, ElastiCache, Kafka, S3, ALB, ECR (Subtask 6-11)
-    - ⏳ K8s Manifests and Testing (Subtask 12-14)
+    - ✅ EKS Cluster (Subtask 5)
+    - ✅ RDS PostgreSQL (Subtask 6) - 5x instances (Database-per-Service)
+    - ✅ ElastiCache Redis (Subtask 7) - 5x clusters (Database-per-Service)
+    - ✅ EC2 Kafka Cluster (Subtask 8) - 3 brokers (t3.small, Multi-AZ)
+    - ✅ S3 Buckets (Subtask 9)
+    - ✅ Application Load Balancer (Subtask 10)
+    - ✅ ECR Repositories (Subtask 11)
+    - ✅ Service Configs Update (Subtask 12)
+    - ✅ K8s Manifests (Subtask 13)
+    - ✅ Testing & Validation (Subtask 14)
+    - ✅ **All 6 microservices deployed and running**
+    - ✅ **Kafka installed, configured, and running**
+    - ✅ **All APIs functional with Kafka enabled**
+    - ✅ **All Swagger UIs accessible (6/6)**
   - Review: [Phase 3 Architecture](./docs/phase3-kubernetes/README.md)
   - Review: [AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment) - Infrastructure setup progress
   - Next steps: Complete AWS infrastructure, Kubernetes migration, distributed tracing
@@ -613,7 +624,7 @@ Microservice ↔ Microservice: OpenFeign (REST) + Kafka (Events)
 |-------|--------|------------|------------|-------|
 | **Phase 1** | ✅ Complete | 100% | Railway (BE), GitHub Pages (FE) | Monolithic architecture, fully functional |
 | **Phase 2** | ✅ Complete | 100% | Digital Ocean (BE), GitHub Pages (FE) | Microservices backend deployed on Digital Ocean, frontend cloned from Phase 1 monolithic repos |
-| **Phase 3** | 🔄 In Progress | 65% | AWS (In Progress) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List), Circuit Breakers & Rate Limiters (comprehensive coverage), SAGA Pattern for distributed transactions (Vote Creation Flow). **In Progress**: AWS Infrastructure Setup ([AWS Deployment Repo](https://github.com/phutruonnttn/yushan-AWS-deployment) - VPC, Security Groups completed), Kubernetes, distributed tracing |
+| **Phase 3** | 🔄 In Progress | 75% | AWS (Deployed) | **Completed**: Rich Domain Model (3 services), Inter-service communication optimization (Kafka events), Hybrid idempotency (Redis + DB), Repository Pattern (all 5 services), Aggregate Boundaries & Domain Events (content-service, other services acceptable as-is), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List), Circuit Breakers & Rate Limiters (comprehensive coverage), SAGA Pattern for distributed transactions (Vote Creation Flow), **AWS Infrastructure Deployment (Task 1 Complete)** - All services deployed and running on AWS EKS, Kafka installed and configured, all APIs functional. **In Progress**: Kubernetes migration (Task 2), Configuration management (Task 3), Distributed tracing (Task 4) |
 
 ## 🔧 Technology Evolution
 
@@ -768,5 +779,5 @@ This project is part of the Yushan Platform ecosystem.
 
 **Yushan Platform Documentation** - Complete guide to the gamified web novel reading platform 🚀
 
-**Last Updated**: January 2025 - Phase 3: SAGA Pattern for distributed transactions completed (Vote Creation Flow with Choreography pattern, Yuan Reservation System, balance check at reserve time, automatic compensation, tested and verified) + Repository Pattern implementation completed for all services + Aggregate Boundaries & Domain Events completed for content-service + Kafka Events Transaction Boundary Fix completed for all services + Gateway-Level JWT Authentication with HMAC Signature completed for all services + Inactive User Token Validation (Redis Block List) completed + Circuit Breakers & Rate Limiters completed (comprehensive coverage: engagement-service, analytics-service, api-gateway) + AWS Infrastructure Setup started ([AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment) - VPC and Security Groups completed, EKS setup in progress) (65% complete)
+**Last Updated**: January 2025 - Phase 3: **AWS Infrastructure Deployment (Task 1) Complete** - All infrastructure deployed (EKS, RDS, ElastiCache, Kafka, S3, ALB), all 6 microservices deployed and running, Kafka installed and configured (3 brokers with Zookeeper), all APIs functional with Kafka enabled, all Swagger UIs accessible (6/6). Previous completions: SAGA Pattern for distributed transactions (Vote Creation Flow), Repository Pattern (all services), Aggregate Boundaries & Domain Events (content-service), Kafka Events Transaction Boundary Fix (all services), Gateway-Level JWT Authentication with HMAC Signature (all services), Inactive User Token Validation (Redis Block List), Circuit Breakers & Rate Limiters (comprehensive coverage). **Phase 3 Progress: 75% Complete** ([AWS Deployment Repository](https://github.com/phutruonnttn/yushan-AWS-deployment))
 
